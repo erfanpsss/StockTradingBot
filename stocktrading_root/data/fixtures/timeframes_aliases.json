@@ -1,0 +1,240 @@
+[
+    {
+        "model":"data.TIMEFRAME_ALIAS",
+        "pk":1,
+        "fields":{
+            "name": "tick"
+        }
+    },
+    {
+        "model":"data.TIMEFRAME_ALIAS",
+        "pk":2,
+        "fields":{
+            "name": "t1"
+        }
+    },
+    {
+        "model":"data.TIMEFRAME_ALIAS",
+        "pk":3,
+        "fields":{
+            "name": "minute"
+        }
+    },
+    {
+        "model":"data.TIMEFRAME_ALIAS",
+        "pk":4,
+        "fields":{
+            "name": "m1"
+        }
+    },
+    {
+        "model":"data.TIMEFRAME_ALIAS",
+        "pk":5,
+        "fields":{
+            "name": "minute3"
+        }
+    },
+    {
+        "model":"data.TIMEFRAME_ALIAS",
+        "pk":6,
+        "fields":{
+            "name": "m3"
+        }
+    },
+    {
+        "model":"data.TIMEFRAME_ALIAS",
+        "pk":7,
+        "fields":{
+            "name": "minute5"
+        }
+    },
+    {
+        "model":"data.TIMEFRAME_ALIAS",
+        "pk":8,
+        "fields":{
+            "name": "m5"
+        }
+    },
+    {
+        "model":"data.TIMEFRAME_ALIAS",
+        "pk":9,
+        "fields":{
+            "name": "minute10"
+        }
+    },
+    {
+        "model":"data.TIMEFRAME_ALIAS",
+        "pk":10,
+        "fields":{
+            "name": "m10"
+        }
+    },
+    {
+        "model":"data.TIMEFRAME_ALIAS",
+        "pk":11,
+        "fields":{
+            "name": "minute15"
+        }
+    },
+    {
+        "model":"data.TIMEFRAME_ALIAS",
+        "pk":12,
+        "fields":{
+            "name": "m15"
+        }
+    },
+    {
+        "model":"data.TIMEFRAME_ALIAS",
+        "pk":13,
+        "fields":{
+            "name": "minute30"
+        }
+    },
+    {
+        "model":"data.TIMEFRAME_ALIAS",
+        "pk":14,
+        "fields":{
+            "name": "m30"
+        }
+    },
+    {
+        "model":"data.TIMEFRAME_ALIAS",
+        "pk":15,
+        "fields":{
+            "name": "hour"
+        }
+    },
+    {
+        "model":"data.TIMEFRAME_ALIAS",
+        "pk":16,
+        "fields":{
+            "name": "h1"
+        }
+    },
+    {
+        "model":"data.TIMEFRAME_ALIAS",
+        "pk":17,
+        "fields":{
+            "name": "hour2"
+        }
+    },
+    {
+        "model":"data.TIMEFRAME_ALIAS",
+        "pk":18,
+        "fields":{
+            "name": "h2"
+        }
+    },
+    {
+        "model":"data.TIMEFRAME_ALIAS",
+        "pk":19,
+        "fields":{
+            "name": "hour3"
+        }
+    },
+    {
+        "model":"data.TIMEFRAME_ALIAS",
+        "pk":20,
+        "fields":{
+            "name": "h3"
+        }
+    },
+    {
+        "model":"data.TIMEFRAME_ALIAS",
+        "pk":21,
+        "fields":{
+            "name": "hour4"
+        }
+    },
+    {
+        "model":"data.TIMEFRAME_ALIAS",
+        "pk":22,
+        "fields":{
+            "name": "h4"
+        }
+    },
+    {
+        "model":"data.TIMEFRAME_ALIAS",
+        "pk":23,
+        "fields":{
+            "name": "hour8"
+        }
+    },
+    {
+        "model":"data.TIMEFRAME_ALIAS",
+        "pk":24,
+        "fields":{
+            "name": "h8"
+        }
+    },
+    {
+        "model":"data.TIMEFRAME_ALIAS",
+        "pk":25,
+        "fields":{
+            "name": "hour12"
+        }
+    },
+    {
+        "model":"data.TIMEFRAME_ALIAS",
+        "pk":26,
+        "fields":{
+            "name": "h12"
+        }
+    },
+    {
+        "model":"data.TIMEFRAME_ALIAS",
+        "pk":27,
+        "fields":{
+            "name": "day"
+        }
+    },
+    {
+        "model":"data.TIMEFRAME_ALIAS",
+        "pk":28,
+        "fields":{
+            "name": "d1"
+        }
+    },
+    {
+        "model":"data.TIMEFRAME_ALIAS",
+        "pk":29,
+        "fields":{
+            "name": "week"
+        }
+    },
+    {
+        "model":"data.TIMEFRAME_ALIAS",
+        "pk":30,
+        "fields":{
+            "name": "w1"
+        }
+    },
+    {
+        "model":"data.TIMEFRAME_ALIAS",
+        "pk":31,
+        "fields":{
+            "name": "month"
+        }
+    },
+    {
+        "model":"data.TIMEFRAME_ALIAS",
+        "pk":32,
+        "fields":{
+            "name": "M1"
+        }
+    },    
+    {
+        "model":"data.TIMEFRAME_ALIAS",
+        "pk":33,
+        "fields":{
+            "name": "year"
+        }
+    },
+    {
+        "model":"data.TIMEFRAME_ALIAS",
+        "pk":34,
+        "fields":{
+            "name": "y1"
+        }
+    }
+]

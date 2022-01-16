@@ -1,0 +1,16 @@
+[
+    {
+        "model":"data.SYMBOL",
+        "pk":1,
+        "fields":{
+            "name": "audusd"
+        }
+    },
+    {
+        "model":"data.SYMBOL",
+        "pk":2,
+        "fields":{
+            "name": "eurusd"
+        }
+    }
+]

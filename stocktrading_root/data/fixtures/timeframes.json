@@ -1,0 +1,138 @@
+[
+    {
+        "model":"data.TIMEFRAME",
+        "pk":1,
+        "fields":{
+            "name": "t1",
+            "alias_id": [1,2]
+        }
+    },
+    {
+        "model":"data.TIMEFRAME",
+        "pk":2,
+        "fields":{
+            "name": "1m",
+            "alias_id": [3,4]
+        }
+    },
+    {
+        "model":"data.TIMEFRAME",
+        "pk":3,
+        "fields":{
+            "name": "3m",
+            "alias_id": [5,6] 
+        }
+    },
+    {
+        "model":"data.TIMEFRAME",
+        "pk":4,
+        "fields":{
+            "name": "5m",
+            "alias_id": [7,8]
+        }
+    },    
+    {
+        "model":"data.TIMEFRAME",
+        "pk":5,
+        "fields":{
+            "name": "10m",
+            "alias_id": [9,10]
+        }
+    },
+    {
+        "model":"data.TIMEFRAME",
+        "pk":6,
+        "fields":{
+            "name": "15m",
+            "alias_id": [11,12]
+        }
+    },   
+    {
+        "model":"data.TIMEFRAME",
+        "pk":7,
+        "fields":{
+            "name": "30m",
+            "alias_id": [13,14]
+        }
+    },
+    {
+        "model":"data.TIMEFRAME",
+        "pk":8,
+        "fields":{
+            "name": "1h",
+            "alias_id": [15,16]
+        }
+    },  
+    {
+        "model":"data.TIMEFRAME",
+        "pk":9,
+        "fields":{
+            "name": "2h",
+            "alias_id": [17,18]
+        }
+    },
+    {
+        "model":"data.TIMEFRAME",
+        "pk":10,
+        "fields":{
+            "name": "3h",
+            "alias_id":[19,20]
+        }
+    },  
+    {
+        "model":"data.TIMEFRAME",
+        "pk":11,
+        "fields":{
+            "name": "4h",
+            "alias_id":[21,22]
+        }
+    },
+    {
+        "model":"data.TIMEFRAME",
+        "pk":12,
+        "fields":{
+            "name": "8h",
+            "alias_id":[23,24] 
+        }
+    },  
+    {
+        "model":"data.TIMEFRAME",
+        "pk":13,
+        "fields":{
+            "name": "12h",
+            "alias_id":[25,26] 
+        }
+    },
+    {
+        "model":"data.TIMEFRAME",
+        "pk":14,
+        "fields":{
+            "name": "1d",
+            "alias_id":[27,28]
+        }
+    },
+    {
+        "model":"data.TIMEFRAME",
+        "pk":15,
+        "fields":{
+            "name": "1w",
+            "alias_id":[29,30]             
+        }
+    },
+    {
+        "model":"data.TIMEFRAME",
+        "pk":16,
+        "fields":{
+            "name": "1M",
+            "alias_id":[31, 32]
+        }
+    },
+    {
+        "model":"data.TIMEFRAME",
+        "pk":17,
+        "fields":{
+            "name": "1y",
+            "alias_id":[33,34]
+        }
+    }
+]
