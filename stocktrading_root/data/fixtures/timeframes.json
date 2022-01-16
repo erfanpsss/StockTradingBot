@@ -1,6 +1,6 @@
 [
     {
-        "model":"data.TIMEFRAME",
+        "model":"data.Timeframe",
         "pk":1,
         "fields":{
             "name": "t1",
@@ -8,7 +8,7 @@
         }
     },
     {
-        "model":"data.TIMEFRAME",
+        "model":"data.Timeframe",
         "pk":2,
         "fields":{
             "name": "1m",
@@ -16,7 +16,7 @@
         }
     },
     {
-        "model":"data.TIMEFRAME",
+        "model":"data.Timeframe",
         "pk":3,
         "fields":{
             "name": "3m",
@@ -24,7 +24,7 @@
         }
     },
     {
-        "model":"data.TIMEFRAME",
+        "model":"data.Timeframe",
         "pk":4,
         "fields":{
             "name": "5m",
@@ -32,7 +32,7 @@
         }
     },    
     {
-        "model":"data.TIMEFRAME",
+        "model":"data.Timeframe",
         "pk":5,
         "fields":{
             "name": "10m",
@@ -40,7 +40,7 @@
         }
     },
     {
-        "model":"data.TIMEFRAME",
+        "model":"data.Timeframe",
         "pk":6,
         "fields":{
             "name": "15m",
@@ -48,7 +48,7 @@
         }
     },   
     {
-        "model":"data.TIMEFRAME",
+        "model":"data.Timeframe",
         "pk":7,
         "fields":{
             "name": "30m",
@@ -56,7 +56,7 @@
         }
     },
     {
-        "model":"data.TIMEFRAME",
+        "model":"data.Timeframe",
         "pk":8,
         "fields":{
             "name": "1h",
@@ -64,7 +64,7 @@
         }
     },  
     {
-        "model":"data.TIMEFRAME",
+        "model":"data.Timeframe",
         "pk":9,
         "fields":{
             "name": "2h",
@@ -72,7 +72,7 @@
         }
     },
     {
-        "model":"data.TIMEFRAME",
+        "model":"data.Timeframe",
         "pk":10,
         "fields":{
             "name": "3h",
@@ -80,7 +80,7 @@
         }
     },  
     {
-        "model":"data.TIMEFRAME",
+        "model":"data.Timeframe",
         "pk":11,
         "fields":{
             "name": "4h",
@@ -88,7 +88,7 @@
         }
     },
     {
-        "model":"data.TIMEFRAME",
+        "model":"data.Timeframe",
         "pk":12,
         "fields":{
             "name": "8h",
@@ -96,7 +96,7 @@
         }
     },  
     {
-        "model":"data.TIMEFRAME",
+        "model":"data.Timeframe",
         "pk":13,
         "fields":{
             "name": "12h",
@@ -104,7 +104,7 @@
         }
     },
     {
-        "model":"data.TIMEFRAME",
+        "model":"data.Timeframe",
         "pk":14,
         "fields":{
             "name": "1d",
@@ -112,7 +112,7 @@
         }
     },
     {
-        "model":"data.TIMEFRAME",
+        "model":"data.Timeframe",
         "pk":15,
         "fields":{
             "name": "1w",
@@ -120,7 +120,7 @@
         }
     },
     {
-        "model":"data.TIMEFRAME",
+        "model":"data.Timeframe",
         "pk":16,
         "fields":{
             "name": "1M",
@@ -128,7 +128,7 @@
         }
     },
     {
-        "model":"data.TIMEFRAME",
+        "model":"data.Timeframe",
         "pk":17,
         "fields":{
             "name": "1y",

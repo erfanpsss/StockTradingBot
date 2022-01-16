@@ -1,16 +1,23 @@
 [
     {
-        "model":"data.SYMBOL",
+        "model":"data.Symbol",
         "pk":1,
         "fields":{
             "name": "audusd"
         }
     },
     {
-        "model":"data.SYMBOL",
+        "model":"data.Symbol",
         "pk":2,
         "fields":{
             "name": "eurusd"
         }
-    }
+    },
+    {
+        "model":"data.Symbol",
+        "pk":2,
+        "fields":{
+            "name": "AAPL"
+        }
+    }    
 ]

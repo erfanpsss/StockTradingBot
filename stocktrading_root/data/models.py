@@ -1,6 +1,6 @@
 from django.db import models
 
-class SYMBOL(models.Model):
+class Symbol(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=20)
 
@@ -12,7 +12,7 @@ class SYMBOL(models.Model):
         return self.name.upper()
 
 
-class TIMEFRAME_ALIAS(models.Model):
+class TimeframeAlias(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=20, unique=True)
 
@@ -23,11 +23,11 @@ class TIMEFRAME_ALIAS(models.Model):
     def __str__(self):
         return self.name.upper()
 
-class TIMEFRAME(models.Model):
+class Timeframe(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=20, unique=True)
     alias_id = models.ManyToManyField(
-        TIMEFRAME_ALIAS, related_name="timeframe_other_name"
+        TimeframeAlias, related_name="timeframe_other_name"
     )
 
     class Meta:
@@ -40,8 +40,8 @@ class TIMEFRAME(models.Model):
 class Data(models.Model):
     id = models.AutoField(primary_key=True)
     datetime = models.DateTimeField()
-    timeframe = models.ForeignKey(TIMEFRAME, on_delete=models.CASCADE, related_name = "data_timeframe")
-    symbol = models.ForeignKey(SYMBOL, on_delete=models.CASCADE, related_name = "data_symbol")
+    timeframe = models.ForeignKey(Timeframe, on_delete=models.CASCADE, related_name = "data_timeframe")
+    symbol = models.ForeignKey(Symbol, on_delete=models.CASCADE, related_name = "data_symbol")
     open_bid = models.FloatField()
     close_bid = models.FloatField()
     high_bid = models.FloatField()
