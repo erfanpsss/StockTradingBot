@@ -1,5 +1,5 @@
 from django.core.management.base import BaseCommand, CommandParser
-from provider.receiver import YahooFinance
+from provider.receivers import YahooFinance
 
 class Command(BaseCommand):
     def add_arguments(self, parser: CommandParser) -> None:
