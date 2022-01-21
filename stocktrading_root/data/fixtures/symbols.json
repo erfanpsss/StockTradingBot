@@ -3,14 +3,14 @@
         "model":"data.Symbol",
         "pk":1,
         "fields":{
-            "name": "audusd"
+            "name": "AUDUSD"
         }
     },
     {
         "model":"data.Symbol",
         "pk":2,
         "fields":{
-            "name": "eurusd"
+            "name": "EURUSD"
         }
     },
     {
