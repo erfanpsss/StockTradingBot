@@ -30,7 +30,6 @@ from keras.models import Sequential
 from sklearn.linear_model import LinearRegression
 from sklearn.neural_network import MLPClassifier, MLPRegressor
 
-
 # from sklearn.svm import SVC
 # from tensorflow import keras
 
@@ -41,14 +40,25 @@ def default_indicators_configuration():
         {"class": "ExponentialMovingAverage", "args": {"period": 10}},
     ]
 
+def default_symbol_timeframe_pair():
+    return [
+        {"AAPL": ["1m", "5m"]},
+        {"AUDUSD": ["1d", "1h"]},
+    ]
 
 class Strategy(models.Model):
-    strategy_choices = (("SampleStrategy", "SampleStrategy"),)
+    strategy_choices = (("SampleStrategy", "SampleStrategy"),("TradingSystem", "TradingSystem"))
 
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=50, unique=True)
+    
     active = models.BooleanField(default=False)
     description = models.TextField(null=True, blank=True)
+
+    symbol_timeframe_pair = models.JSONField(
+        default=default_symbol_timeframe_pair
+    )
+    
     indicators_configuration = models.JSONField(
         default=default_indicators_configuration
     )
@@ -84,7 +94,7 @@ class Strategy(models.Model):
         return indicators_configurations
 
     def init(self):
-        module = importlib.import_module("strategy.models")
+        module = importlib.import_module("strategy.strategies")
         strategy_class = getattr(module, self.strategy_class)
         conf = {"strategy": self}
         self.strategy = strategy_class(**conf)
@@ -93,46 +103,3 @@ class Strategy(models.Model):
         self.init()
         self.strategy.setup()
         return self.strategy.run()
-
-
-class StrategyBase:
-    B = 1  # Buy
-    S = -1  # Sell
-    N = 0  # Neutral
-    EB = 2  # Exit Buy
-    ES = -2  # Exit Sell
-
-    def __init__(self, *args, **kwargs):
-        self.strategy = kwargs["strategy"]
-        self.indicators_parameter_dict = {}
-        for parameter in self.strategy.indicators_configuration:
-            self.indicators_parameter_dict[parameter["class"]] = parameter["args"]
-
-    def setup(self):
-        if not self.strategy.strategy_storage:
-            self.strategy.strategy_storage = {}
-            self.strategy.save()
-
-
-    def run(self):
-        pass
-
-
-class SampleStrategy(StrategyBase):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-    def setup(self):
-        super().setup()
-
-    def run(self):
-        super().run()
-        try:
-            decision = self.N
-            with transaction.atomic():
-                pass
-        except Exception as e:
-            print("SampleStrategy", e)
-            return decision
-
-

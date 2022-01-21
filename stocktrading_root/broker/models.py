@@ -12,16 +12,23 @@ POSITION_TYPES = (
 
 
 class Trade(models.Model):
+    TRADE_TYPES_CHOICES = [
+        ("open", "open"),
+        ("close", "close")
+    ]
     id = models.AutoField(primary_key=True)
-    opened_datetime = models.DateTimeField()
-    closed_datetime = models.DateTimeField()
+    trade_type = models.CharField(max_length=10, choices=TRADE_TYPES_CHOICES)
+    trade_datetime = models.DateTimeField()
     broker = models.CharField(max_length=20, choices=BROKERS_LIST)
     symbol = models.ForeignKey(Symbol, on_delete=models.CASCADE, related_name="trades")
     position_id = models.CharField(max_length=200)
     position_type = models.CharField(max_length=10, choices=POSITION_TYPES)
-    opened_price = models.FloatField()
-    closed_price = models.FloatField(blank=True, null=True)
-    position_size = models.FloatField()
+    trade_price = models.FloatField()
+    trade_size = models.FloatField()
+    trade_stop_loss = models.FloatField(blank = True, null = True)
+    trade_limit = models.FloatField(blank = True, null = True)
+    parent_trade = models.ForeignKey("self", on_delete=models.CASCADE, related_name="sub_trades", blank = True, null = True)
+    executor = models.CharField(max_length=200)
 
     class Meta:
         verbose_name = "Trade"
