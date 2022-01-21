@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     'broker',
     'indicator',
     'strategy',
+    'runner',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
