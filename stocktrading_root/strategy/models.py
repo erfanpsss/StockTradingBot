@@ -103,7 +103,7 @@ class Strategy(models.Model):
         for pair in self.symbol_timeframe_pair:
             for symbol, timeframes in pair.items():
                 for timeframe in timeframes:
-                    call_command("loaddata", symbol, timeframe)
+                    call_command("get_data", symbol = symbol, timeframe = timeframe)
 
     def run(self):
         self.init()

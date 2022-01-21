@@ -2,6 +2,7 @@ import yfinance as yf
 import pandas as pd
 from data.models import Data, Symbol, Timeframe
 import pytz
+from django.utils import timezone
 
 class Provider:
     def __init__(self, symbol: Symbol, timeframe: Timeframe, period: str = None):
@@ -29,8 +30,9 @@ class YahooFinance(Provider):
         if data.empty:
             raise Exception("No data was retreived")
         for counter, ind in enumerate(data.index):
+            price_datetime = data.index[counter].astimezone(pytz.utc) if timezone.is_aware(data.index[counter]) else pytz.utc.localize(data.index[counter])
             data_obj = Data.objects.get_or_create(
-                datetime = pytz.utc.localize(data.index[counter]),
+                datetime = price_datetime,
                 timeframe = self.timeframe,
                 symbol = self.symbol,
                 open_bid = data.Open.iloc[counter], 

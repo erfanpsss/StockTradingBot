@@ -11,7 +11,6 @@ class TradingSystem(StrategyBase):
     def run(self):
         super().run()
         try:
-            decision = self.N
             with transaction.atomic(): pass
                 
                 
@@ -22,4 +21,3 @@ class TradingSystem(StrategyBase):
 
         except Exception as e:
             print("SampleStrategy", e)
-            return decision

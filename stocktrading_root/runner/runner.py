@@ -4,7 +4,7 @@ import time
 from django.core.management import call_command
 
 class Runner:
-    WAIT_TIME: int = 60 #seconds
+    WAIT_TIME: int = 3 #seconds
 
     def __init__(self, *args, **kwargs):
         self.strategies: List[Strategy] = list(Strategy.objects.filter(active = True))
