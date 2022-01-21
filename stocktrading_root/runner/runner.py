@@ -1,6 +1,7 @@
 from strategy.models import Strategy
 from typing import Union, List
 import time
+from django.core.management import call_command
 
 class Runner:
     WAIT_TIME: int = 60 #seconds

@@ -1,7 +1,7 @@
 import importlib
 import math
 import pickle
-
+from django.core.management import call_command
 import numpy as np
 import pandas as pd
 import tensorflow as tf
@@ -99,7 +99,14 @@ class Strategy(models.Model):
         conf = {"strategy": self}
         self.strategy = strategy_class(**conf)
 
+    def get_data(self):
+        for pair in self.symbol_timeframe_pair:
+            for symbol, timeframes in pair.items():
+                for timeframe in timeframes:
+                    call_command("loaddata", symbol, timeframe)
+
     def run(self):
         self.init()
+        self.get_data()
         self.strategy.setup()
         return self.strategy.run()
