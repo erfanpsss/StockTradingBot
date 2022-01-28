@@ -60,8 +60,8 @@ class AdminIbdData(admin.ModelAdmin):
         "vol_change_in_1k_s",
     )
     list_filter = (
-        "symbol",
         "date",
+        "symbol",
     )
     ordeing = ("date",)
     search_fields = (
