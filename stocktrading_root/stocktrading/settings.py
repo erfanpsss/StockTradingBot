@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-#!ctjhhgc=#7*jd_!x1y!bk2kpt306xloh=$_io%+_#h0hv2p2
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
@@ -85,7 +85,7 @@ DATABASES = {
         "ENGINE": "django.db.backends.postgresql_psycopg2",
         "NAME": "StockTrading",
         "USER": "postgres",
-        "PASSWORD": "postgres",
+        "PASSWORD": "Sunny432",
         "HOST": "127.0.0.1",
         "PORT": "5432",
         "ATOMIC_REQUESTS": True,
@@ -130,6 +130,7 @@ USE_TZ = True
 STATIC_URL = 'static/'
 MEDIA_URL = 'media/'
 MEDIA_ROOT =  os.path.join(BASE_DIR, 'media')
+STATIC_ROOT =  os.path.join(BASE_DIR, 'static')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
