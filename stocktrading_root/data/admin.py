@@ -1,5 +1,5 @@
 from django.contrib import admin
-
+from rangefilter.filters import DateRangeFilter, DateTimeRangeFilter
 from .models import Data, Symbol, Timeframe, TimeframeAlias, IbdData, IbdDataFile
 
 
@@ -40,6 +40,8 @@ class AdminData(admin.ModelAdmin):
 
 
 class AdminIbdData(admin.ModelAdmin):
+    list_per_page = 15
+    list_select_related = ('symbol',)
     list_display = (
         "id",
         "symbol_name",
@@ -61,6 +63,7 @@ class AdminIbdData(admin.ModelAdmin):
     )
     list_filter = (
         "date",
+        ("date", DateRangeFilter),
         "ind_grp_rs",
         "smr_rating",
         "acc_dis_rating",
@@ -73,6 +76,8 @@ class AdminIbdData(admin.ModelAdmin):
         "symbol__name",
     )
 
+    def get_rangefilter_created_at_title(self, request, field_path):
+        return 'Date range'
 
 
 class AdminIbdDataFile(admin.ModelAdmin):
