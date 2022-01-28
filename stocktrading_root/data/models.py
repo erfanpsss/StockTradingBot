@@ -1,9 +1,15 @@
+from datetime import datetime
+from enum import unique
+from pyexpat import model
+from tabnanny import verbose
 from django.db import models
 from django.db.models import Q
+import pandas as pd
+import math
 
 class Symbol(models.Model):
     id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=20)
+    name = models.CharField(max_length=20, unique = True)
 
     class Meta:
         verbose_name = "Sybmol"
@@ -110,3 +116,90 @@ class Data(models.Model):
                 if conf not in indicators_configurations:
                     indicators_configurations.append(conf)
         return indicators_configurations
+
+
+
+
+
+class IbdData(models.Model):
+    id = models.AutoField(primary_key=True)
+    date = models.DateField()
+    symbol = models.ForeignKey(Symbol, on_delete=models.CASCADE, related_name="ibd_data")
+    price = models.FloatField()
+    price_change_in_currency = models.FloatField()
+    price_change_in_percentage = models.FloatField()
+    comp_rating = models.FloatField(blank = True, null = True)
+    eps_rating = models.FloatField(blank = True, null = True)
+    industry_group_rank = models.FloatField(blank = True, null = True)
+    rs_rating = models.FloatField(blank = True, null = True)
+    ind_grp_rs = models.CharField(max_length=10)
+    smr_rating = models.CharField(max_length=10)
+    acc_dis_rating = models.CharField(max_length=10)
+    spon_rating = models.CharField(max_length=10)
+    vol_change_in_percentage = models.FloatField(blank = True, null = True)
+    vol_change_in_1k_s = models.FloatField(blank = True, null = True)
+
+
+    @property
+    def symbol_name(self):
+        return self.symbol.name
+
+    class Meta:
+        unique_together = ("date", "symbol")
+        verbose_name = "IBD data"
+        verbose_name_plural = "IBD data"
+
+
+class IbdDataFile(models.Model):
+    id = models.AutoField(primary_key=True)
+    file = models.FileField(upload_to="ibd_data_files")
+    created_date = models.DateTimeField(auto_now=True)
+    class Meta:
+        verbose_name = "IBD data file"
+        verbose_name_plural = "IBD data files"
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self.create_ibd_record()
+
+    def prepare_data(self):
+        data=pd.read_excel(self.file.file, skiprows=[0,1,2,3])
+        record_datetime = data.iloc[0][1]
+        record_datetime=[d.strip() for d in record_datetime.split(",")[-2:]] 
+        record_datetime = datetime.strptime(" ".join(record_datetime), "%B %d %Y") 
+        record_datetime = record_datetime.date()
+        data=pd.read_excel(self.file.file, skiprows=[0,1,2,3,4,5,6,7,8])
+        return data, record_datetime
+
+    def create_ibd_record(self):
+        data, record_datetime=self.prepare_data()
+        all_ibd_data_obj = []
+        for counter, index in enumerate(data.index):
+            try:
+                symbol_temp = data["Symbol"].iloc[counter]
+                if isinstance(symbol_temp, float) and math.isnan(symbol_temp):
+                    break
+                symbol_obj, created = Symbol.objects.get_or_create(name = symbol_temp)
+                ibd_data_kwargs = {
+                    "date": record_datetime,
+                    "symbol": symbol_obj,
+                    "price": data["Price"].iloc[counter],
+                    "price_change_in_currency": data["Price $ Change"].iloc[counter],
+                    "price_change_in_percentage": data["Price % Change"].iloc[counter],
+                    "comp_rating": data["Comp. Rating"].iloc[counter],
+                    "eps_rating": data["EPS Rating"].iloc[counter],
+                    "industry_group_rank": data["Industry Group Rank"].iloc[counter],
+                    "rs_rating": data["RS Rating"].iloc[counter],
+                    "ind_grp_rs": data["Ind Grp RS"].iloc[counter],
+                    "smr_rating": data["SMR Rating"].iloc[counter],
+                    "acc_dis_rating": data["Acc/Dis Rating"].iloc[counter],
+                    "spon_rating": data["Spon Rating"].iloc[counter],
+                    "vol_change_in_percentage": data["Vol. % Change"].iloc[counter],
+                    "vol_change_in_1k_s": data["Vol. (1000s)"].iloc[counter],
+                }
+                all_ibd_data_obj.append(IbdData(**ibd_data_kwargs))
+            except Exception as e:
+                print(e)
+        
+        IbdData.objects.bulk_create(all_ibd_data_obj, ignore_conflicts=True)
+
