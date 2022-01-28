@@ -61,6 +61,10 @@ class AdminIbdData(admin.ModelAdmin):
     )
     list_filter = (
         "date",
+        "ind_grp_rs",
+        "smr_rating",
+        "acc_dis_rating",
+        "spon_rating",
         "symbol",
     )
     ordeing = ("date",)
