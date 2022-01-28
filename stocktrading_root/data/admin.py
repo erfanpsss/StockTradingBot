@@ -66,7 +66,7 @@ class AdminIbdData(admin.ModelAdmin):
     ordeing = ("date",)
     search_fields = (
         "date",
-        "symbol",
+        "symbol__name",
     )
 
 
