@@ -6,6 +6,7 @@ from django.db import models
 from django.db.models import Q
 import pandas as pd
 import math
+import threading
 
 FINVIZ_DATE_FORMAT = "%m/%d/%Y"
 FINVIZ_DATETIME_FORMAT = "%m/%d/%Y %H:%M:%S %p"
@@ -235,7 +236,8 @@ class IbdDataFile(models.Model):
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
-        self.create_ibd_record()
+        thread = threading.Thread(target=self.create_ibd_record, args=())
+        thread.start()
 
     def prepare_data(self):
         data=pd.read_excel(self.file.file, skiprows=[0,1,2,3])
@@ -288,7 +290,8 @@ class FinvizDataFile(models.Model):
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
-        self.create_finviz_record()
+        thread = threading.Thread(target=self.create_finviz_record, args=())
+        thread.start()
 
     def prepare_data(self):
         data=pd.read_excel(self.file.file)
