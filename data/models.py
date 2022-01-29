@@ -245,7 +245,6 @@ class IbdDataFile(models.Model):
 
     def create_ibd_record(self):
         data, record_datetime=self.prepare_data()
-        all_ibd_data_obj = []
         for counter, index in enumerate(data.index):
             try:
                 symbol_temp = data["Symbol"].iloc[counter]
@@ -269,9 +268,52 @@ class IbdDataFile(models.Model):
                     "vol_change_in_percentage": data["Vol. % Change"].iloc[counter],
                     "vol_change_in_1k_s": data["Vol. (1000s)"].iloc[counter],
                 }
-                all_ibd_data_obj.append(IbdData(**ibd_data_kwargs))
+                IbdData.objects.update_or_create(**ibd_data_kwargs)
             except Exception as e:
                 print(e)
         
-        IbdData.objects.bulk_create(all_ibd_data_obj, ignore_conflicts=True)
 
+
+class FinvizDataFile(models.Model):
+    id = models.AutoField(primary_key=True)
+    file = models.FileField(upload_to="ibd_data_files")
+    created_date = models.DateTimeField(auto_now=True)
+    class Meta:
+        verbose_name = "Finviz data file"
+        verbose_name_plural = "Finviz data files"
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self.create_finviz_record()
+
+    def prepare_data(self):
+        data=pd.read_excel(self.file.file)
+        record_datetime = datetime.utcnow().date()
+        return data, record_datetime
+
+    def create_finviz_record(self):
+        data, record_datetime=self.prepare_data()
+        for counter, index in enumerate(data.index):
+            try:
+                symbol_temp = data["Symbol"].iloc[counter]
+                symbol_obj, created = Symbol.objects.get_or_create(name = symbol_temp)
+                ibd_data_kwargs = {
+                    "date": record_datetime,
+                    "symbol": symbol_obj,
+                    "price": data["Price"].iloc[counter],
+                    "price_change_in_currency": data["Price $ Change"].iloc[counter],
+                    "price_change_in_percentage": data["Price % Change"].iloc[counter],
+                    "comp_rating": data["Comp. Rating"].iloc[counter],
+                    "eps_rating": data["EPS Rating"].iloc[counter],
+                    "industry_group_rank": data["Industry Group Rank"].iloc[counter],
+                    "rs_rating": data["RS Rating"].iloc[counter],
+                    "ind_grp_rs": data["Ind Grp RS"].iloc[counter],
+                    "smr_rating": data["SMR Rating"].iloc[counter],
+                    "acc_dis_rating": data["Acc/Dis Rating"].iloc[counter],
+                    "spon_rating": data["Spon Rating"].iloc[counter],
+                    "vol_change_in_percentage": data["Vol. % Change"].iloc[counter],
+                    "vol_change_in_1k_s": data["Vol. (1000s)"].iloc[counter],
+                }
+                IbdData.objects.update_or_create(**ibd_data_kwargs)
+            except Exception as e:
+                print(e)
