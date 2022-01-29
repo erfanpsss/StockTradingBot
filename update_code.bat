@@ -4,3 +4,4 @@ git pull
 git checkout ehsan
 git merge main
 git push
+cmd /k
