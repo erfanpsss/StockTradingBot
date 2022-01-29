@@ -26,7 +26,9 @@ SECRET_KEY = 'django-insecure-#!ctjhhgc=#7*jd_!x1y!bk2kpt306xloh=$_io%+_#h0hv2p2
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
+
+GIT_BRANCH_NAME = "main"
 
 
 # Application definition
@@ -38,13 +40,15 @@ INSTALLED_APPS = [
     'indicator',
     'strategy',
     'runner',
+    'setting',
     'rangefilter',
-    'django.contrib.admin',
+    'stocktrading.apps.SiteAdminConfig',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.admindocs',
 ]
 
 MIDDLEWARE = [
