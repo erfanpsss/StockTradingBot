@@ -4,23 +4,22 @@ import os
 from multiprocessing import Process
 
 def run_cmd_command(commands):
-    os.system(commands)
-
+    os.system(f'cmd /k "{commands}"')
 
 class Command(BaseCommand): 
 
     def handle(self, *args, **options):
         try:
 
-            commands = f"""
-            cd {str(settings.BASE_DIR)}
-            git checkout main
-            git fetch
-            git pull
-            git checkout {settings.GIT_BRANCH_NAME}
-            git merge main
-            git push
-            """
+            commands = (
+                f"cd {str(settings.BASE_DIR)} &"
+                f"git checkout main &"
+                f"git fetch &"
+                f"git pull &"
+                f"git checkout {settings.GIT_BRANCH_NAME} &"
+                f"git merge main &"
+                f"git push"
+            )
             p = Process(target=run_cmd_command, args=(commands,))
             p.start()
         except Exception as e:
