@@ -28,6 +28,8 @@ DEBUG = True
 
 ALLOWED_HOSTS = ["*"]
 
+GIT_BRANCH_NAME = "ehsan"
+
 
 # Application definition
 
@@ -38,13 +40,15 @@ INSTALLED_APPS = [
     'indicator',
     'strategy',
     'runner',
+    'setting',
     'rangefilter',
-    'django.contrib.admin',
+    'stocktrading.apps.SiteAdminConfig',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.admindocs',
 ]
 
 MIDDLEWARE = [
