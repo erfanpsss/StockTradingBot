@@ -29,6 +29,7 @@ daphne==3.0.2
 DateTime==4.3
 distlib==0.3.4
 Django==4.0.1
+django-admin-rangefilter==0.8.3
 django-filter==21.1
 djangorestframework==3.13.1
 et-xmlfile==1.1.0
