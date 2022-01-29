@@ -30,6 +30,7 @@ DateTime==4.3
 distlib==0.3.4
 Django==4.0.1
 django-admin-rangefilter==0.8.3
+django-environ==0.8.1
 django-filter==21.1
 djangorestframework==3.13.1
 docutils==0.18.1
