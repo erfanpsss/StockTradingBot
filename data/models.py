@@ -7,6 +7,9 @@ from django.db.models import Q
 import pandas as pd
 import math
 
+FINVIZ_DATE_FORMAT = "%m/%d/%Y"
+FINVIZ_DATETIME_FORMAT = "%m/%d/%Y %H:%M:%S %p"
+
 class Symbol(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=20, unique = True)
@@ -278,6 +281,7 @@ class FinvizDataFile(models.Model):
     id = models.AutoField(primary_key=True)
     file = models.FileField(upload_to="finviz_data_files")
     created_date = models.DateTimeField(auto_now=True)
+    
     class Meta:
         verbose_name = "Finviz data file"
         verbose_name_plural = "Finviz data files"
@@ -288,6 +292,58 @@ class FinvizDataFile(models.Model):
 
     def prepare_data(self):
         data=pd.read_excel(self.file.file)
+        date_fields = ["IPO Date"]
+        datetime_fields = ["Earnings Date"]
+        percentage_fields = [
+            "Dividend Yield", 
+            "Payout Ratio", 
+            "EPS growth this year", 
+            "EPS growth next year", 
+            "EPS growth past 5 years", 
+            "EPS growth next 5 years", 
+            "Sales growth past 5 years",
+            "EPS growth quarter over quarter",
+            "Sales growth quarter over quarter",
+            "Insider Ownership",
+            "Insider Transactions",
+            "Institutional Ownership",
+            "Institutional Transactions",
+            "Float Short",
+            "Return on Assets",
+            "Return on Equity",
+            "Return on Investment",
+            "Gross Margin",
+            "Operating Margin",
+            "Profit Margin",
+            "Performance (Week)",
+            "Performance (Month)",
+            "Performance (Quarter)",
+            "Performance (Half Year)",
+            "Performance (Year)",
+            "Performance (YTD)",
+            "Volatility (Week)",
+            "Volatility (Month)",
+            "20-Day Simple Moving Average",
+            "50-Day Simple Moving Average",
+            "200-Day Simple Moving Average",
+            "50-Day High",
+            "50-Day Low",
+            "52-Week High",
+            "52-Week Low",
+            "Change from Open",
+            "Gap",
+            "Change",
+            "After-Hours Change",
+        ]
+        for counter, index in enumerate(data.index):
+            for date_field in date_fields:
+                data[date_field].iloc[counter] = datetime.strptime(data[date_field].iloc[counter], FINVIZ_DATE_FORMAT)
+            for datetime_field in datetime_fields:
+                data[datetime_field].iloc[counter] = datetime.strptime(data[datetime_field].iloc[counter], FINVIZ_DATETIME_FORMAT)
+            for percentage_field in percentage_fields:
+                if data[percentage_field].iloc[counter]:
+                    data[percentage_field].iloc[counter] = float(data[percentage_field].iloc[counter].replace("%", "").stript())
+
         record_datetime = datetime.utcnow().date()
         return data, record_datetime
 
