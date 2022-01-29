@@ -214,7 +214,7 @@ class IbdData(models.Model):
     finviz_price=models.FloatField(blank = True, null = True)
     change_percentage=models.FloatField(blank = True, null = True)
     volume=models.FloatField(blank = True, null = True)
-    earnings_date=models.DatetimeField(blank = True, null = True)
+    earnings_date=models.DateTimeField(blank = True, null = True)
     target_price=models.FloatField(blank = True, null = True)
     ipo_date=models.DateField(blank = True, null = True)
     after_hours_close=models.FloatField(blank = True, null = True)
