@@ -1,2 +1,1 @@
-C:\Users\Administrator\Documents\StockTradingApp\StockTradingBotPythonVenv\Scripts\activate
-python C:\Users\Administrator\Documents\StockTradingApp\StockTradingBot\stocktrading_root\manage.py runserver 127.0.0.1:8888
+C:\Users\Administrator\Documents\StockTradingApp\StockTradingBotPythonVenv\Scripts\activate && python C:\Users\Administrator\Documents\StockTradingApp\StockTradingBot\stocktrading_root\manage.py runserver 127.0.0.1:8888
