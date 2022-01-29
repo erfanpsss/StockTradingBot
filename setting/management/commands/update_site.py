@@ -30,15 +30,19 @@ def run_cmd_command(base_dir, git_branch, python_exe, server_post):
     os.system(f'{commands}')
     os.system(f'netstat -ano | findstr 127.0.0.1:{server_post} > tmp_server_pid')
     server_process_outputs = open('tmp_server_pid', 'r').readlines()
+    os.remove("tmp_server_pid")
+
     for server_process_output in server_process_outputs:
         pid = get_pid(server_process_output)
+        if pid == "0":
+            continue
         stop_server_command = f"taskkill /PID {pid} /F"
         os.system(f'{stop_server_command}')
+        
     run_server_command = (
         f"cd {base_dir} &"
         f"{python_exe} manage.py runserver 127.0.0.1:{server_post}"
     )
-    os.remove("tmp_server_pid")
     os.system(f'{run_server_command}')
 
 class Command(BaseCommand): 
