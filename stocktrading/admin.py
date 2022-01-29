@@ -17,7 +17,7 @@ class SiteAdmin(admin.AdminSite):
     def get_urls(self):
         urls = super().get_urls()
         extra_urls = [
-            path('update-site/', self.update_site),
+            path('update-site/', self.update_site, name="update_site"),
         ]
         return extra_urls + urls    
 
