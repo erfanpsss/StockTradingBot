@@ -3,7 +3,7 @@ from django.conf import settings
 import os
 from multiprocessing import Process
 
-def run_cmd_command(self, commands):
+def run_cmd_command(commands):
     os.system(commands)
 
 
