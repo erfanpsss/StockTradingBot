@@ -354,7 +354,7 @@ class FinvizDataFile(models.Model):
         data, record_datetime=self.prepare_data()
         for counter, index in enumerate(data.index):
             try:
-                symbol_temp = data["Symbol"].iloc[counter]
+                symbol_temp = data["Ticker"].iloc[counter]
                 symbol_obj, created = Symbol.objects.get_or_create(name = symbol_temp)
                 ibd_data_kwargs = {
                     "date": record_datetime,
