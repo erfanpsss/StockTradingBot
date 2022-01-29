@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.urls import path
 from django.shortcuts import redirect
+from django.core.management import call_command
 
 
 class SiteAdmin(admin.AdminSite):
@@ -9,7 +10,7 @@ class SiteAdmin(admin.AdminSite):
     index_title = "Management Panel"
 
     def update_site(self, request):
-
+        call_command("update_site")
         return redirect("/admin/")
 
 
