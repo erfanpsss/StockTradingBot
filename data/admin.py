@@ -5,19 +5,19 @@ from .models import Data, Symbol, Timeframe, TimeframeAlias, IbdData, IbdDataFil
 
 class AdminTimeframeAlias(admin.ModelAdmin):
     list_display = ("name",)
-    ordeing = ("name",)
+    ordering = ("name",)
     search_fields = ("name",)
 
 
 class AdminTimeframe(admin.ModelAdmin):
     list_display = ("name",)
-    ordeing = ("name",)
+    ordering = ("name",)
     search_fields = ("name",)
 
 
 class AdminSymbol(admin.ModelAdmin):
     list_display = ("name",)
-    ordeing = ("name",)
+    ordering = ("name",)
     search_fields = ("name",)
 
 
@@ -32,7 +32,7 @@ class AdminData(admin.ModelAdmin):
         "timeframe",
         "datetime",
     )
-    ordeing = ("datetime",)
+    ordering = ("datetime",)
     search_fields = (
         "datetime",
     )
@@ -50,7 +50,6 @@ class AdminIbdData(admin.ModelAdmin):
         "price_change_in_currency",
         "price_change_in_percentage",
         "comp_rating",
-        "eps_rating",
         "eps_rating",
         "industry_group_rank",
         "rs_rating",
@@ -70,7 +69,7 @@ class AdminIbdData(admin.ModelAdmin):
         "spon_rating",
         "symbol",
     )
-    ordeing = ("date",)
+    ordering = ("date", "-eps_rating", "-comp_rating", "industry_group_rank", "rs_rating", "ind_grp_rs", "smr_rating", "acc_dis_rating", "spon_rating",)
     search_fields = (
         "date",
         "symbol__name",
