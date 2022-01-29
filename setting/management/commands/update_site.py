@@ -32,7 +32,7 @@ def run_cmd_command(base_dir, git_branch, python_exe, server_post):
     server_process_outputs = open('tmp_server_pid', 'r').readlines()
     for server_process_output in server_process_outputs:
         pid = get_pid(server_process_output)
-        stop_server_command = f"taskkill /PID {pid} /F"
+        stop_server_command = f"taskkill /PID {pid} /F /T"
         os.system(f'{stop_server_command}')
     run_server_command = (
         f"cd {base_dir} &"
