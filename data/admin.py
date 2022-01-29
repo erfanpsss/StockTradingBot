@@ -69,7 +69,7 @@ class AdminIbdData(admin.ModelAdmin):
         "spon_rating",
         "symbol",
     )
-    ordering = ("date", "-eps_rating", "-comp_rating", "industry_group_rank", "rs_rating", "ind_grp_rs", "smr_rating", "acc_dis_rating", "spon_rating",)
+    ordering = ("date", "eps_rating", "comp_rating", "industry_group_rank", "rs_rating", "ind_grp_rs", "smr_rating", "acc_dis_rating", "spon_rating",)
     search_fields = (
         "date",
         "symbol__name",
@@ -90,7 +90,7 @@ class AdminIbdDataFile(admin.ModelAdmin):
         "created_date",
         "file",
     )
-    ordeing = ("created_date",)
+    ordering = ("created_date",)
     search_fields = (
         "id",
         "file",
