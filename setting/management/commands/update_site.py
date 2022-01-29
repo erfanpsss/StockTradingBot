@@ -20,6 +20,7 @@ class Command(BaseCommand):
                 f"git merge main &"
                 f"git push &"
                 f"{settings.PYTHON_EXE} -m pip install -r requirements.txt &"
+                f"{settings.PYTHON_EXE} manage.py collectstatic &"
                 f"{settings.PYTHON_EXE} manage.py migrate"
             )
             p = Process(target=run_cmd_command, args=(commands,))
