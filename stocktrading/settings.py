@@ -21,6 +21,7 @@ env = environ.Env()
 env.read_env(os.path.join(BASE_DIR, ".env"))
 
 PYTHON_EXE = env("PYTHON_EXE")
+SERVER_PORT = env("SERVER_PORT")
 
 
 # Quick-start development settings - unsuitable for production

@@ -3,27 +3,49 @@ from django.conf import settings
 import os
 from multiprocessing import Process
 
-def run_cmd_command(commands):
-    os.system(f'cmd /k "{commands}"')
+def get_pid(server_process_output):
+    pid = []
+    server_process_output = server_process_output.replace("\n", "")
+    for l in range(-1, -len(server_process_output)-1, -1):
+        if server_process_output[l] in [" "]:break
+        pid.append(server_process_output[l])
+    pid.reverse()
+    pid = "".join(pid)
+    return pid
+
+
+def run_cmd_command(base_dir, git_branch, python_exe, server_post):
+    commands = (
+        f"cd {base_dir} &"
+        f"git checkout main &"
+        f"git fetch &"
+        f"git pull &"
+        f"git checkout {git_branch} &"
+        f"git merge main &"
+        f"git push &"
+        f"{python_exe} -m pip install -r requirements.txt &"
+        f"echo yes|{python_exe} manage.py collectstatic &"
+        f"{python_exe} manage.py migrate"
+    )
+    os.system(f'{commands}')
+    os.system(f'netstat -ano | findstr 127.0.0.1:{server_post} > tmp_server_pid')
+    server_process_outputs = open('tmp_server_pid', 'r').readlines()
+    for server_process_output in server_process_outputs:
+        pid = get_pid(server_process_output)
+        stop_server_command = f"taskkill /PID {pid} /F"
+        os.system(f'{stop_server_command}')
+    run_server_command = (
+        f"cd {base_dir} &"
+        f"{python_exe} manage.py runserver 127.0.0.1:{server_post}"
+    )
+    os.remove("tmp_server_pid")
+    os.system(f'{run_server_command}')
 
 class Command(BaseCommand): 
 
     def handle(self, *args, **options):
         try:
-
-            commands = (
-                f"cd {str(settings.BASE_DIR)} &"
-                f"git checkout main &"
-                f"git fetch &"
-                f"git pull &"
-                f"git checkout {settings.GIT_BRANCH_NAME} &"
-                f"git merge main &"
-                f"git push &"
-                f"{settings.PYTHON_EXE} -m pip install -r requirements.txt &"
-                f"{settings.PYTHON_EXE} manage.py collectstatic &"
-                f"{settings.PYTHON_EXE} manage.py migrate"
-            )
-            p = Process(target=run_cmd_command, args=(commands,))
+            p = Process(target=run_cmd_command, args=(str(settings.BASE_DIR), settings.GIT_BRANCH_NAME, settings.PYTHON_EXE, settings.SERVER_PORT))
             p.start()
         except Exception as e:
             print(e)
