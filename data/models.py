@@ -276,7 +276,7 @@ class IbdDataFile(models.Model):
 
 class FinvizDataFile(models.Model):
     id = models.AutoField(primary_key=True)
-    file = models.FileField(upload_to="ibd_data_files")
+    file = models.FileField(upload_to="finviz_data_files")
     created_date = models.DateTimeField(auto_now=True)
     class Meta:
         verbose_name = "Finviz data file"
