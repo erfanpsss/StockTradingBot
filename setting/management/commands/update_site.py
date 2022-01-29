@@ -5,8 +5,9 @@ from multiprocessing import Process
 
 def get_pid(server_process_output):
     pid = []
+    server_process_output = server_process_output.replace("\n", "")
     for l in range(-1, -len(server_process_output)-1, -1):
-        if server_process_output[l] in [" ", "\n"]:break
+        if server_process_output[l] in [" "]:break
         pid.append(server_process_output[l])
     pid.reverse()
     pid = "".join(pid)
@@ -28,14 +29,16 @@ def run_cmd_command(base_dir, git_branch, python_exe, server_post):
     )
     os.system(f'{commands}')
     os.system(f'netstat -ano | findstr 127.0.0.1:{server_post} > tmp_server_pid')
-    server_process_output = open('tmp_server_pid', 'r').read()
-    pid = get_pid(server_process_output)
-    stop_server_command = f"taskkill /PID {pid} /F"
-    os.system(f'{stop_server_command}')
+    server_process_outputs = open('tmp_server_pid', 'r').readlines()
+    for server_process_output in server_process_outputs:
+        pid = get_pid(server_process_output)
+        stop_server_command = f"taskkill /PID {pid} /F"
+        os.system(f'{stop_server_command}')
     run_server_command = (
         f"cd {base_dir} &"
         f"{python_exe} manage.py runserver 127.0.0.1:{server_post}"
     )
+    os.remove("tmp_server_pid")
     os.system(f'{run_server_command}')
 
 class Command(BaseCommand): 
