@@ -123,6 +123,8 @@ class Data(models.Model):
 
 class IbdData(models.Model):
     id = models.AutoField(primary_key=True)
+
+    # IBD data
     date = models.DateField()
     symbol = models.ForeignKey(Symbol, on_delete=models.CASCADE, related_name="ibd_data")
     price = models.FloatField()
@@ -138,6 +140,9 @@ class IbdData(models.Model):
     spon_rating = models.CharField(max_length=10)
     vol_change_in_percentage = models.FloatField(blank = True, null = True)
     vol_change_in_1k_s = models.FloatField(blank = True, null = True)
+
+    # Finviz data
+    
 
 
     @property
