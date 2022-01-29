@@ -1,6 +1,11 @@
 from django.core.management.base import BaseCommand, CommandParser
 from django.conf import settings
 import os
+from multiprocessing import Process
+
+def run_cmd_command(self, commands):
+    os.system(commands)
+
 
 class Command(BaseCommand): 
 
@@ -16,7 +21,8 @@ class Command(BaseCommand):
             git merge main
             git push
             """
-
-            os.system(commands)
+            p = Process(target=run_cmd_command, args=('commands',))
+            p.start()
+            p.join()
         except Exception as e:
             print(e)
