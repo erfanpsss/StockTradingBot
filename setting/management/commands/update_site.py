@@ -21,7 +21,7 @@ class Command(BaseCommand):
             git merge main
             git push
             """
-            p = Process(target=run_cmd_command, args=('commands',))
+            p = Process(target=run_cmd_command, args=(commands,))
             p.start()
             p.join()
         except Exception as e:
