@@ -18,6 +18,8 @@ class Symbol(models.Model):
     def __str__(self):
         return self.name.upper()
 
+    def __unicode__(self):
+        return self.name.upper()
 
 class TimeframeAlias(models.Model):
     id = models.AutoField(primary_key=True)
@@ -142,12 +144,6 @@ class IbdData(models.Model):
     vol_change_in_1k_s = models.FloatField(blank = True, null = True)
 
     # Finviz data
-    
-
-
-    @property
-    def symbol_name(self):
-        return self.symbol.name
 
     class Meta:
         unique_together = ("date", "symbol")

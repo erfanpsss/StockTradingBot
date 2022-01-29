@@ -1,7 +1,9 @@
 from django.contrib import admin
 from rangefilter.filters import DateRangeFilter, DateTimeRangeFilter
 from .models import Data, Symbol, Timeframe, TimeframeAlias, IbdData, IbdDataFile
-
+from import_export.admin import ExportActionMixin, ExportMixin
+from import_export.fields import Field
+from import_export import resources
 
 class AdminTimeframeAlias(admin.ModelAdmin):
     list_display = ("name",)
@@ -39,12 +41,20 @@ class AdminData(admin.ModelAdmin):
 
 
 
-class AdminIbdData(admin.ModelAdmin):
+class IbdDataResource(resources.ModelResource):
+    class Meta:
+        model = IbdData
+
+    def dehydrate_symbol(self, obj):
+        return obj.symbol.name
+
+class AdminIbdData(ExportActionMixin, admin.ModelAdmin):
     list_per_page = 15
     list_select_related = ('symbol',)
+    resource_class = IbdDataResource
     list_display = (
         "id",
-        "symbol_name",
+        "symbol",
         "date",
         "price",
         "price_change_in_currency",
@@ -77,6 +87,8 @@ class AdminIbdData(admin.ModelAdmin):
 
     def get_rangefilter_created_at_title(self, request, field_path):
         return 'Date range'
+
+
 
 
 class AdminIbdDataFile(admin.ModelAdmin):
