@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'runner',
     'setting',
     'rangefilter',
+    'import_export',
     'stocktrading.apps.SiteAdminConfig',
     'django.contrib.auth',
     'django.contrib.contenttypes',
