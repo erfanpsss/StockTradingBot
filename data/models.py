@@ -269,6 +269,8 @@ class IbdDataFile(models.Model):
                             data[column].iloc[counter] = None
                     except:
                         pass
+                if data[column].iloc[counter] == "nan":
+                    data[column].iloc[counter] = None
               
         
         return data, record_datetime
@@ -391,6 +393,8 @@ class FinvizDataFile(models.Model):
                             data[column].iloc[counter] = None
                     except:
                         pass
+                if data[column].iloc[counter] == "nan":
+                    data[column].iloc[counter] = None
 
             for date_field in date_fields:
                 if data[date_field].iloc[counter]:
