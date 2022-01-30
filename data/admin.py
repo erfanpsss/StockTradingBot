@@ -49,7 +49,7 @@ class IbdDataResource(resources.ModelResource):
         return obj.symbol.name
 
 class AdminIbdData(ExportActionMixin, admin.ModelAdmin):
-    list_per_page = 15
+    list_per_page = 10
     list_select_related = ('symbol',)
     resource_class = IbdDataResource
     list_display = (
