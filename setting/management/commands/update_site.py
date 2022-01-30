@@ -24,7 +24,6 @@ def run_cmd_command(base_dir, git_branch, python_exe, server_post):
         f"git merge main &"
         f"git push &"
         f"{python_exe} -m pip install -r requirements.txt &"
-        f"echo yes|{python_exe} manage.py collectstatic &"
         f"{python_exe} manage.py migrate"
     )
     os.system(f'{commands}')
