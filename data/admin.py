@@ -167,17 +167,23 @@ class AdminIbdDataFile(admin.ModelAdmin):
         "id",
         "created_date",
         "file",
+        "is_processed",
+        "processed_date",
+        "errors",
     )
     list_filter = (
         "id",
         "created_date",
-        "file",
+        "is_processed", 
+        "processed_date",
     )
     ordering = ("created_date",)
     search_fields = (
         "id",
         "file",
         "created_date",
+        "is_processed",
+        "processed_date",
     )
 
 
@@ -186,17 +192,23 @@ class AdminFinvizDataFile(admin.ModelAdmin):
         "id",
         "created_date",
         "file",
+        "is_processed",
+        "processed_date",
+        "errors",        
     )
     list_filter = (
         "id",
         "created_date",
-        "file",
+        "is_processed",
+        "processed_date",
     )
     ordering = ("created_date",)
     search_fields = (
         "id",
         "file",
         "created_date",
+        "is_processed",
+        "processed_date",
     )
 
 
