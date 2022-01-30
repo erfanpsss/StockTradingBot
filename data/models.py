@@ -15,6 +15,37 @@ FINVIZ_DATETIME_FORMAT = "%m/%d/%Y %I:%M:%S %p"
 FINVIZ_DATETIME_FORMAT_NO_P = "%m/%d/%Y %H:%M:%S"
 FINVIZ_DATETIME_FORMAT_NO_S = "%m/%d/%Y %H:%M"
 
+def isnan(value):
+    is_nan_np_status = False
+    is_nan_pd_status = False
+    is_nan_mt_status = False
+    is_nan_c1_status = False
+    is_nan_c2_status = False
+    try:
+        is_nan_mt_status =  math.isnan(value)
+    except:
+        pass
+    try:
+        is_nan_np_status = np.isnan(value)
+    except:
+        pass
+    try:
+        is_nan_pd_status = pd.isna(value)
+    except:
+        pass
+    try:
+        if value != value:
+            is_nan_c1_status = True
+    except:
+        pass
+    try:
+        if str(value) == "nan":
+            is_nan_c2_status = True
+    except:
+        pass
+
+    return any([is_nan_np_status, is_nan_pd_status, is_nan_mt_status, is_nan_c1_status, is_nan_c2_status])
+
 class Symbol(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=20, unique = True)
@@ -256,23 +287,8 @@ class IbdDataFile(models.Model):
         record_datetime = datetime.strptime(" ".join(record_datetime), "%B %d %Y") 
         record_datetime = self.data_date or record_datetime.date()
         data=pd.read_excel(self.file.file, skiprows=[0,1,2,3,4,5,6,7,8])
-        for counter, index in enumerate(data.index):
-            if not data["Symbol"].iloc[counter] or (isinstance(data["Symbol"].iloc[counter], float) and math.isnan(data["Symbol"].iloc[counter])):
-                break
-            for column in data.columns:
-                try:
-                    if math.isnan(data[column].iloc[counter]):
-                        data[column].iloc[counter] = None
-                except:
-                    try:
-                        if np.isnan(data[column].iloc[counter]):
-                            data[column].iloc[counter] = None
-                    except:
-                        pass
-                if data[column].iloc[counter] == "nan":
-                    data[column].iloc[counter] = None
-              
-        
+        data.replace(to_replace=[np.nan, math.nan], value=None, inplace=True)
+
         return data, record_datetime
 
     def create_ibd_record(self):
@@ -281,7 +297,7 @@ class IbdDataFile(models.Model):
         for counter, index in enumerate(data.index):
             try:
                 symbol_temp = data["Symbol"].iloc[counter]
-                if isinstance(symbol_temp, float) and math.isnan(symbol_temp):
+                if not symbol_temp or len(symbol_temp) >= 10 or not data["Price"].iloc[counter] or (isinstance(symbol_temp, float) and math.isnan(symbol_temp)):
                     break
                 symbol_obj, created = Symbol.objects.get_or_create(name = symbol_temp)
                 ibd_data_kwargs = {
@@ -336,6 +352,7 @@ class FinvizDataFile(models.Model):
 
     def prepare_data(self):
         data=pd.read_csv(self.file.file)
+        data.replace(to_replace=[np.nan, math.nan], value=None, inplace=True)
         date_fields = ["IPO Date"]
         datetime_fields = ["Earnings Date"]
         percentage_fields = [
@@ -383,19 +400,6 @@ class FinvizDataFile(models.Model):
         record_datetime = self.data_date or datetime.utcnow().date()
 
         for counter, index in enumerate(data.index):
-            for column in data.columns:
-                try:
-                    if math.isnan(data[column].iloc[counter]):
-                        data[column].iloc[counter] = None
-                except:
-                    try:
-                        if np.isnan(data[column].iloc[counter]):
-                            data[column].iloc[counter] = None
-                    except:
-                        pass
-                if data[column].iloc[counter] == "nan":
-                    data[column].iloc[counter] = None
-
             for date_field in date_fields:
                 if data[date_field].iloc[counter]:
                     data[date_field].iloc[counter] = datetime.strptime(data[date_field].iloc[counter].strip(), FINVIZ_DATE_FORMAT)
@@ -427,6 +431,8 @@ class FinvizDataFile(models.Model):
         for counter, index in enumerate(data.index):
             try:
                 symbol_temp = data["Ticker"].iloc[counter]
+                if not symbol_temp:
+                    continue
                 symbol_obj, created = Symbol.objects.get_or_create(name = symbol_temp)
                 ibd_data_kwargs = {
                     "date": record_datetime,
