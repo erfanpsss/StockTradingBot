@@ -6,6 +6,27 @@ from import_export.fields import Field
 from import_export import resources
 from django.db.models import F
 from django.contrib.admin.views.main import ChangeList
+from django.http import HttpResponse
+import plotly.express as px
+
+
+@admin.action(description='Generate scattered chart for given query based on their Price change in percentage field')
+def generate_scattered_chart(modeladmin, request, queryset):
+    x = list(queryset.values_list("symbol", flat=True))
+    y = list(queryset.values_list("price_change_in_percentage", flat = True))
+    fig =px.scatter(x=x, y=y, trendline="ols")
+    fig.data[1].line.color = 'red'
+    chart = fig.to_html()  
+    return HttpResponse(chart)
+
+@admin.action(description='Generate line chart for given query based on their Price change in percentage field')
+def generate_line_chart(modeladmin, request, queryset):
+    x = list(queryset.values_list("date", flat=True))
+    y = list(queryset.values_list("price", flat = True))
+    fig =px.line(x=x, y=y)
+    chart = fig.to_html()  
+    return HttpResponse(chart)
+
 
 class AdminTimeframeAlias(admin.ModelAdmin):
     list_display = ("name",)
@@ -181,6 +202,9 @@ class AdminIbdData(ExportActionMixin, admin.ModelAdmin):
         "symbol__name",
     )
 
+    actions = [generate_scattered_chart, generate_line_chart]
+
+
     def get_changelist(self, request, **kwargs):
         """
         Returns the ChangeList class for use on the changelist page.
@@ -189,6 +213,7 @@ class AdminIbdData(ExportActionMixin, admin.ModelAdmin):
 
     def get_rangefilter_created_at_title(self, request, field_path):
         return 'Date range'
+
 
 
 
