@@ -232,7 +232,7 @@ class IbdData(models.Model):
 class IbdDataFile(models.Model):
     id = models.AutoField(primary_key=True)
     file = models.FileField(upload_to="ibd_data_files")
-    created_date = models.DateTimeField(auto_now=True)
+    created_date = models.DateTimeField(auto_now_add=True)
     data_date = models.DateField(blank = True, null = True)
     is_processed = models.BooleanField(default=False)
     processed_date = models.DateTimeField(blank = True, null = True)
@@ -308,7 +308,7 @@ class IbdDataFile(models.Model):
 class FinvizDataFile(models.Model):
     id = models.AutoField(primary_key=True)
     file = models.FileField(upload_to="finviz_data_files")
-    created_date = models.DateTimeField(auto_now=True)
+    created_date = models.DateTimeField(auto_now_add=True)
     data_date = models.DateField(blank = True, null = True)
     is_processed = models.BooleanField(default=False)
     processed_date = models.DateTimeField(blank = True, null = True)
