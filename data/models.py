@@ -226,8 +226,8 @@ class IbdData(models.Model):
 
     class Meta:
         unique_together = ("date", "symbol")
-        verbose_name = "IBD data"
-        verbose_name_plural = "IBD data"
+        verbose_name = "Stock data"
+        verbose_name_plural = "Stock data"
 
 
 class IbdDataFile(models.Model):
