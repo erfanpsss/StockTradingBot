@@ -5,6 +5,7 @@ from tabnanny import verbose
 from django.db import models
 from django.db.models import Q
 import pandas as pd
+import numpy as np
 import math
 import threading
 import pytz
@@ -259,10 +260,16 @@ class IbdDataFile(models.Model):
             if not data["Symbol"].iloc[counter] or (isinstance(data["Symbol"].iloc[counter], float) and math.isnan(data["Symbol"].iloc[counter])):
                 break
             for column in data.columns:
-                if data[column].iloc[counter] and isinstance(data[column].iloc[counter], float) and math.isnan(data[column].iloc[counter]):
-                    data[column].iloc[counter] = None
-                elif not data[column].iloc[counter] or data[column].iloc[counter] == "nan":
-                    data[column].iloc[counter] = None
+                try:
+                    if math.isnan(data[column].iloc[counter]):
+                        data[column].iloc[counter] = None
+                except:
+                    try:
+                        if np.isnan(data[column].iloc[counter]):
+                            data[column].iloc[counter] = None
+                    except:
+                        pass
+              
         
         return data, record_datetime
 
@@ -375,10 +382,16 @@ class FinvizDataFile(models.Model):
 
         for counter, index in enumerate(data.index):
             for column in data.columns:
-                if data[column].iloc[counter] and isinstance(data[column].iloc[counter], float) and math.isnan(data[column].iloc[counter]):
-                    data[column].iloc[counter] = None
-                elif not data[column].iloc[counter] or data[column].iloc[counter] == "nan":
-                    data[column].iloc[counter] = None
+                try:
+                    if math.isnan(data[column].iloc[counter]):
+                        data[column].iloc[counter] = None
+                except:
+                    try:
+                        if np.isnan(data[column].iloc[counter]):
+                            data[column].iloc[counter] = None
+                    except:
+                        pass
+
             for date_field in date_fields:
                 if data[date_field].iloc[counter]:
                     data[date_field].iloc[counter] = datetime.strptime(data[date_field].iloc[counter].strip(), FINVIZ_DATE_FORMAT)
