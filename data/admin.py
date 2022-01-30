@@ -5,6 +5,7 @@ from import_export.admin import ExportActionMixin, ExportMixin
 from import_export.fields import Field
 from import_export import resources
 from django.db.models import F
+from django.contrib.admin.views.main import ChangeList
 
 class AdminTimeframeAlias(admin.ModelAdmin):
     list_display = ("name",)
@@ -48,6 +49,29 @@ class IbdDataResource(resources.ModelResource):
 
     def dehydrate_symbol(self, obj):
         return obj.symbol.name
+
+
+class AdminIbdDataChangeList(ChangeList):
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        given_query = request.GET
+        fields = IbdData._meta.fields
+
+        given_sort_columns = given_query.get("o") or ""
+        if given_sort_columns:
+            given_sort_columns = str(given_sort_columns)
+            given_sort_columns = given_sort_columns.split(".")
+            given_sort_columns = [int(col) for col in given_sort_columns]
+
+        for column in given_sort_columns:
+            if column < 0:
+                qs = qs.order_by(F(fields[abs(column) - 1].name).desc(nulls_last=True))
+            else:
+                qs = qs.order_by(F(fields[abs(column) - 1].name).asc(nulls_last=True))
+            
+        return qs
+
+
 
 class AdminIbdData(ExportActionMixin, admin.ModelAdmin):
     list_per_page = 10
@@ -156,6 +180,12 @@ class AdminIbdData(ExportActionMixin, admin.ModelAdmin):
         "date",
         "symbol__name",
     )
+
+    def get_changelist(self, request, **kwargs):
+        """
+        Returns the ChangeList class for use on the changelist page.
+        """
+        return AdminIbdDataChangeList  # PUT YOU OWERRIDEN CHANGE LIST HERE
 
     def get_rangefilter_created_at_title(self, request, field_path):
         return 'Date range'
