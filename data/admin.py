@@ -150,7 +150,7 @@ class AdminIbdData(ExportActionMixin, admin.ModelAdmin):
         "spon_rating",
         "symbol",
     )
-    ordering = ("date", "eps_rating", "comp_rating", "industry_group_rank", "rs_rating", "ind_grp_rs", "smr_rating", "acc_dis_rating", "spon_rating",)
+    ordering = ("date", "price_change_in_percentage", "eps_rating", "comp_rating", "industry_group_rank", "rs_rating", "ind_grp_rs", "smr_rating", "acc_dis_rating", "spon_rating",)
     search_fields = (
         "date",
         "symbol__name",
