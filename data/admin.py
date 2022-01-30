@@ -4,6 +4,7 @@ from .models import Data, Symbol, Timeframe, TimeframeAlias, IbdData, IbdDataFil
 from import_export.admin import ExportActionMixin, ExportMixin
 from import_export.fields import Field
 from import_export import resources
+from django.db.models import F
 
 class AdminTimeframeAlias(admin.ModelAdmin):
     list_display = ("name",)
@@ -150,7 +151,7 @@ class AdminIbdData(ExportActionMixin, admin.ModelAdmin):
         "spon_rating",
         "symbol",
     )
-    ordering = ("date", "price_change_in_percentage", "eps_rating", "comp_rating", "industry_group_rank", "rs_rating", "ind_grp_rs", "smr_rating", "acc_dis_rating", "spon_rating",)
+    ordering = ("date", F('price_change_in_percentage').desc(nulls_last=True), "eps_rating", "comp_rating", "industry_group_rank", "rs_rating", "ind_grp_rs", "smr_rating", "acc_dis_rating", "spon_rating",)
     search_fields = (
         "date",
         "symbol__name",
