@@ -3,7 +3,7 @@ from enum import unique
 from pyexpat import model
 from tabnanny import verbose
 from django.db import models
-from django.db.models import Q
+from django.db.models import Q, F
 import pandas as pd
 import numpy as np
 import math
