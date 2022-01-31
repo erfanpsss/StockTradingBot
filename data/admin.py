@@ -254,6 +254,7 @@ class AdminIbdDataFile(admin.ModelAdmin):
 class AdminFinvizDataFile(admin.ModelAdmin):
     list_display = (
         "id",
+        "creator",
         "created_date",
         "data_date",
         "file",
@@ -263,6 +264,7 @@ class AdminFinvizDataFile(admin.ModelAdmin):
     )
     list_filter = (
         "id",
+        "creator",
         "created_date",
         "data_date",
         "is_processed",
@@ -271,6 +273,7 @@ class AdminFinvizDataFile(admin.ModelAdmin):
     ordering = ("created_date",)
     search_fields = (
         "id",
+        "creator",
         "file",
         "created_date",
         "data_date",

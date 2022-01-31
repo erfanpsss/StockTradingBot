@@ -9,6 +9,9 @@ import numpy as np
 import math
 import threading
 import pytz
+import requests
+from django.conf import settings
+from django.core.files.base import ContentFile, File
 
 FINVIZ_DATE_FORMAT = "%m/%d/%Y"
 FINVIZ_DATETIME_FORMAT = "%m/%d/%Y %I:%M:%S %p"
@@ -280,6 +283,7 @@ class IbdDataFile(models.Model):
             thread = threading.Thread(target=self.create_ibd_record, args=())
             thread.start()
 
+    
     def prepare_data(self):
         data=pd.read_excel(self.file.file, skiprows=[0,1,2,3])
         record_datetime = data.iloc[0][1]
@@ -331,7 +335,12 @@ class IbdDataFile(models.Model):
         print("IBD data imported ...")
 
 class FinvizDataFile(models.Model):
+    CREATOR_CHOICES = (
+        ("Manual", "Manual"),
+        ("Automatic", "Automatic"),
+    )
     id = models.AutoField(primary_key=True)
+    creator = models.CharField(max_length=20, choices=CREATOR_CHOICES, default="Manual")
     file = models.FileField(upload_to="finviz_data_files")
     created_date = models.DateTimeField(auto_now_add=True)
     data_date = models.DateField()
@@ -349,6 +358,41 @@ class FinvizDataFile(models.Model):
         if not self.is_processed:
             thread = threading.Thread(target=self.create_finviz_record, args=())
             thread.start()
+
+    @classmethod
+    def get_finviz_data(cls):
+        base_url = "https://elite.finviz.com/"
+        screener_url = f"{base_url}screener.ashx?v=152&c=0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72"
+        export_button_url = f"{base_url}export.ashx?v=152"
+        login_url = "https://finviz.com/login_submit.ashx"
+        user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/97.0.4692.99 Safari/537.36 Edg/97.0.1072.76"
+        email = settings.FINVIZ_USERNAME
+        password = settings.FINVIZ_PASSWORD
+        login_payload = {
+            "email": email,
+            "password": password
+        }
+        headers = {
+            "user-agent": user_agent
+        }
+        session = requests.Session()
+        login_response = session.post(login_url, data=login_payload, headers=headers)
+        screener_response = session.get(screener_url, headers=headers)
+        export_response = session.get(export_button_url, headers=headers)
+        return export_response.content
+
+    @classmethod
+    def create_finviz_data_automatically(cls):
+        today = datetime.utcnow().date()
+        finviz_data = cls.get_finviz_data()
+        file_name = f"finviz_data_{today}.csv"
+        file = ContentFile(finviz_data)
+        new_file = cls()
+        new_file.data_date = today
+        new_file.creator = "Automatic"
+        new_file.file.save(file_name, file, save=True)
+        new_file.save()
+
 
     def prepare_data(self):
         data=pd.read_csv(self.file.file)
