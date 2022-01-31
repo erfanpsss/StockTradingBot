@@ -22,6 +22,8 @@ env.read_env(os.path.join(BASE_DIR, ".env"))
 
 PYTHON_EXE = env("PYTHON_EXE")
 SERVER_PORT = env("SERVER_PORT")
+FINVIZ_USERNAME = env("FINVIZ_USERNAME")
+FINVIZ_PASSWORD = env("FINVIZ_PASSWORD")
 
 
 # Quick-start development settings - unsuitable for production
