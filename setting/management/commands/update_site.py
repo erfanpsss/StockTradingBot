@@ -2,7 +2,7 @@ from django.core.management.base import BaseCommand, CommandParser
 from django.conf import settings
 import os
 from multiprocessing import Process
-from runner.models import RunnerStatus
+
 
 def get_pid(server_process_output):
     pid = []
