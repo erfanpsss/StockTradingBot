@@ -49,8 +49,6 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         try:
-            runner = RunnerStatus.objects.first()
-            runner.stop()
             p = Process(target=run_cmd_command, args=(str(settings.BASE_DIR), settings.GIT_BRANCH_NAME, settings.PYTHON_EXE, settings.SERVER_PORT))
             p.start()
         except Exception as e:
