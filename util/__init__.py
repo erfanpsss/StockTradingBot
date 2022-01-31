@@ -1,6 +1,8 @@
 import pandas as pd
 import math
 import numpy as np
+import threading
+import multiprocessing
 
 def isnan(value):
     is_nan_np_status = False
@@ -32,3 +34,17 @@ def isnan(value):
         pass
 
     return any([is_nan_np_status, is_nan_pd_status, is_nan_mt_status, is_nan_c1_status, is_nan_c2_status])
+
+
+
+def getThreadByName(name):
+    threads = threading.enumerate() #Threads list
+    for thread in threads:
+        if thread.name == name:
+            return thread
+
+def getProcessByName(name):
+    processes = multiprocessing.enumerate() #Threads list
+    for process in processes:
+        if process.name == name:
+            return process
