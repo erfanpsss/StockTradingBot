@@ -457,8 +457,14 @@ class FinvizDataFile(models.Model):
                                 data[datetime_field].iloc[counter] = pytz.utc.localize(data[datetime_field].iloc[counter])
             for percentage_field in percentage_fields:
                 if data[percentage_field].iloc[counter]:
-                    data[percentage_field].iloc[counter] = float(data[percentage_field].iloc[counter].replace("%", "").strip())
-        
+                    try:
+                        if isinstance(data[percentage_field].iloc[counter], str):
+                            data[percentage_field].iloc[counter] = float(data[percentage_field].iloc[counter].replace("%", "").strip())
+                        else:
+                            data[percentage_field].iloc[counter] = float(data[percentage_field].iloc[counter])
+                    except:
+                        pass
+
         return data, record_datetime
 
     def create_finviz_record(self):
