@@ -11,6 +11,7 @@ import threading
 import pytz
 import requests
 from django.conf import settings
+from util import isnan
 from django.core.files.base import ContentFile, File
 
 FINVIZ_DATE_FORMAT = "%m/%d/%Y"
@@ -18,36 +19,6 @@ FINVIZ_DATETIME_FORMAT = "%m/%d/%Y %I:%M:%S %p"
 FINVIZ_DATETIME_FORMAT_NO_P = "%m/%d/%Y %H:%M:%S"
 FINVIZ_DATETIME_FORMAT_NO_S = "%m/%d/%Y %H:%M"
 
-def isnan(value):
-    is_nan_np_status = False
-    is_nan_pd_status = False
-    is_nan_mt_status = False
-    is_nan_c1_status = False
-    is_nan_c2_status = False
-    try:
-        is_nan_mt_status =  math.isnan(value)
-    except:
-        pass
-    try:
-        is_nan_np_status = np.isnan(value)
-    except:
-        pass
-    try:
-        is_nan_pd_status = pd.isna(value)
-    except:
-        pass
-    try:
-        if value != value:
-            is_nan_c1_status = True
-    except:
-        pass
-    try:
-        if str(value) == "nan":
-            is_nan_c2_status = True
-    except:
-        pass
-
-    return any([is_nan_np_status, is_nan_pd_status, is_nan_mt_status, is_nan_c1_status, is_nan_c2_status])
 
 class Symbol(models.Model):
     id = models.AutoField(primary_key=True)
@@ -383,15 +354,23 @@ class FinvizDataFile(models.Model):
 
     @classmethod
     def create_finviz_data_automatically(cls):
-        today = datetime.utcnow().date()
-        finviz_data = cls.get_finviz_data()
-        file_name = f"finviz_data_{today}.csv"
-        file = ContentFile(finviz_data)
-        new_file = cls()
-        new_file.data_date = today
-        new_file.creator = "Automatic"
-        new_file.file.save(file_name, file, save=True)
-        new_file.save()
+        try:
+            now = datetime.utcnow()
+            if now.hour < 8:
+                return
+            today = now.date()
+            if cls.objects.filter(data_date = today).exists():
+                return
+            finviz_data = cls.get_finviz_data()
+            file_name = f"finviz_data_{today}.csv"
+            file = ContentFile(finviz_data)
+            new_file = cls()
+            new_file.data_date = today
+            new_file.creator = "Automatic"
+            new_file.file.save(file_name, file, save=True)
+            new_file.save()
+        except Exception as e:
+            print(e)
 
 
     def prepare_data(self):
