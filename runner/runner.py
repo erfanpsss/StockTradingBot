@@ -5,6 +5,7 @@ from django.core.management import call_command
 from data.models import FinvizDataFile
 from runner.models import RunnerStatus
 import datetime
+import pytz
 
 class Runner:
     def __init__(self, *args, **kwargs):
@@ -19,7 +20,7 @@ class Runner:
         while True:
             print("Runner is running...")
             self.runner_status = RunnerStatus.objects.first()
-            RunnerStatus.objects.update(last_run_time = datetime.datetime.utcnow())
+            RunnerStatus.objects.update(last_run_time = pytz.utc.localize(datetime.datetime.utcnow()))
             if not self.runner_status.enable:
                 break
             self.get_stock_data()
