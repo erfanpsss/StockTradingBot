@@ -2,6 +2,7 @@ from django.core.management.base import BaseCommand, CommandParser
 from django.conf import settings
 import os
 from multiprocessing import Process
+from runner.models import RunnerStatus
 
 def get_pid(server_process_output):
     pid = []
@@ -48,6 +49,8 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         try:
+            runner = RunnerStatus.objects.first()
+            runner.stop()
             p = Process(target=run_cmd_command, args=(str(settings.BASE_DIR), settings.GIT_BRANCH_NAME, settings.PYTHON_EXE, settings.SERVER_PORT))
             p.start()
         except Exception as e:

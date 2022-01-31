@@ -365,6 +365,7 @@ class FinvizDataFile(models.Model):
 
     @classmethod
     def create_finviz_data_automatically(cls):
+        print("Getting finviz data automatically")
         try:
             now = datetime.utcnow()
             if now.hour < 21 or now.weekday() in [6, 7]:
@@ -380,6 +381,7 @@ class FinvizDataFile(models.Model):
             new_file.creator = "Automatic"
             new_file.file.save(file_name, file, save = True)
             new_file.save()
+            print("Finviz was saved")
         except Exception as e:
             print(e)
 
