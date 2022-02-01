@@ -367,8 +367,8 @@ class FinvizDataFile(models.Model):
     def create_finviz_data_automatically(cls):
         print("Getting finviz data automatically")
         try:
-            now = datetime.utcnow()
-            if now.hour < 21 or now.weekday() in [6, 7]:
+            now = pytz.utc.localize(datetime.utcnow())
+            if now.hour < 23 or now.weekday() in [6, 7]:
                 return
             today = now.date()
             if cls.objects.filter(data_date = today).exists():
