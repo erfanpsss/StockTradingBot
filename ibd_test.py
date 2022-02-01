@@ -1,7 +1,7 @@
 import requests
+import json
 
-
-export_button_url = f"https://ibdstockscreener.investors.com/research-tool/api/news/ibdlist/_IBDDataTables"
+export_button_url = f"https://ibdstockscreener.investors.com/research-tool/api/ibdlist/export/_IBDDataTables"
 
 login_url = "https://login.investors.com/accounts.login"
 
@@ -23,11 +23,18 @@ headers = {
     "user-agent": user_agent
 }
 
+cookies = {}
+
 session = requests.Session()
 
 login_response = session.post(login_url, data=login_payload, headers=headers)
-breakpoint()
+login_response_content = json.loads(login_response.content)
+
+session.auth = (login_response_content.get("sessionInfo", {}).get("cookieName"), login_response_content.get("sessionInfo", {}).get("cookieName"))
+session.cookies.set(login_response_content.get("sessionInfo", {}).get("cookieName"), login_response_content.get("sessionInfo", {}).get("cookieName"))
+
 export_response = session.get(export_button_url, headers=headers)
+print(export_response.content)
 
 with open("data_ibd.xlsx", "wb") as f:
     f.write(export_response.content)
