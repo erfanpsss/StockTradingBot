@@ -381,7 +381,7 @@ class FinvizDataFile(models.Model):
             new_file.creator = "Automatic"
             new_file.file.save(file_name, file, save = True)
             new_file.save()
-            print("Finviz was saved")
+            print("Finviz file was saved")
         except Exception as e:
             print(e)
 
@@ -576,12 +576,6 @@ class FinvizDataFile(models.Model):
 
 
 
-
-
-
-
-
-
 class Sector(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=20, unique = True)
@@ -688,7 +682,223 @@ class FinvizSectorData(models.Model):
     after_hours_change_percentage=models.FloatField(default = None, blank = True, null = True)
 
     class Meta:
-        unique_together = ("date", "symbol")
-        verbose_name = "Stock data"
-        verbose_name_plural = "Stock data"
+        unique_together = ("date", "sector")
+        verbose_name = "Finviz sector data"
+        verbose_name_plural = "Finviz sector data"
 
+
+
+
+
+
+
+
+class FinvizSectorDataFile(models.Model):
+    CREATOR_CHOICES = (
+        ("Manual", "Manual"),
+        ("Automatic", "Automatic"),
+    )
+    id = models.AutoField(primary_key=True)
+    creator = models.CharField(max_length=20, choices=CREATOR_CHOICES, default="Manual")
+    file = models.FileField(upload_to="finviz_sector_data_files")
+    created_date = models.DateTimeField(auto_now_add=True)
+    data_date = models.DateField()
+    is_processed = models.BooleanField(default=False)
+    is_processing = models.BooleanField(default=False)
+    processed_date = models.DateTimeField(blank = True, null = True)
+    errors = models.TextField(blank=True, null=True)
+
+    
+    class Meta:
+        verbose_name = "Finviz sector data file"
+        verbose_name_plural = "Finviz sector data files"
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        if not self.is_processed and not self.is_processing:
+            thread = threading.Thread(target=self.create_finviz_record, args=())
+            thread.start()
+
+    @classmethod
+    def get_finviz_data(cls):
+        base_url = "https://elite.finviz.com/"
+        screener_url = f"{base_url}groups.ashx?g=sector&v=152&o=name&c=0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26"
+        export_button_url = f"{base_url}grp_export.ashx?g=sector&amp;v=152&amp;o=name"
+        login_url = "https://finviz.com/login_submit.ashx"
+        user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/97.0.4692.99 Safari/537.36 Edg/97.0.1072.76"
+        email = settings.FINVIZ_USERNAME
+        password = settings.FINVIZ_PASSWORD
+        login_payload = {
+            "email": email,
+            "password": password
+        }
+        headers = {
+            "user-agent": user_agent
+        }
+        session = requests.Session()
+        login_response = session.post(login_url, data=login_payload, headers=headers)
+        screener_response = session.get(screener_url, headers=headers)
+        export_response = session.get(export_button_url, headers=headers)
+        return export_response.content
+
+    @classmethod
+    def create_finviz_data_automatically(cls):
+        print("Getting finviz sector data automatically")
+        try:
+            now = pytz.utc.localize(datetime.utcnow())
+            if now.hour < 23 or now.weekday() in [6, 7]:
+                return
+            today = now.date()
+            if cls.objects.filter(data_date = today).exists():
+                return
+            finviz_data = cls.get_finviz_data()
+            file_name = f"finviz_sector_data_{today}.csv"
+            file = ContentFile(finviz_data)
+            new_file = cls()
+            new_file.data_date = today
+            new_file.creator = "Automatic"
+            new_file.file.save(file_name, file, save = True)
+            new_file.save()
+            print("Finviz sector file was saved")
+        except Exception as e:
+            print(e)
+
+
+    def prepare_data(self):
+        data=pd.read_csv(self.file.file)
+        data.replace(to_replace=[np.nan, math.nan], value=None, inplace=True)
+        percentage_fields = [
+            "Dividend Yield", 
+            "EPS growth past 5 years", 
+            "EPS growth next 5 years", 
+            "Sales growth past 5 years",
+            "Float Short",
+            "Performance (Week)",
+            "Performance (Month)",
+            "Performance (Quarter)",
+            "Performance (Half Year)",
+            "Performance (Year)",
+            "Performance (Year To Date)",
+            "Change",
+        ]
+
+        record_datetime = self.data_date or datetime.utcnow().date()
+
+        for counter, index in enumerate(data.index):
+            for percentage_field in percentage_fields:
+                if data[percentage_field].iloc[counter]:
+                    try:
+                        if isinstance(data[percentage_field].iloc[counter], str):
+                            data[percentage_field].iloc[counter] = float(data[percentage_field].iloc[counter].replace("%", "").strip())
+                        else:
+                            data[percentage_field].iloc[counter] = float(data[percentage_field].iloc[counter])
+                    except:
+                        pass
+
+        return data, record_datetime
+
+    def create_finviz_record(self):
+        self.is_processing = True
+        self.save()
+        errors = []
+        data = pd.DataFrame()
+        try:
+            data, record_datetime=self.prepare_data()
+        except Exception as e:
+            print(e)
+            errors.append(str(e))
+        if not data.empty:
+            for counter, index in enumerate(data.index):
+                try:
+                    sector_temp = data["Name"].iloc[counter]
+                    if not sector_temp:
+                        continue
+                    sector_obj, created = Sector.objects.get_or_create(name = sector_temp)
+                    ibd_data_kwargs = {
+                        "date": record_datetime,
+                        "sector": sector_obj,
+                        "defaults": {
+                            "company": data["Company"].iloc[counter],
+                            "sector": data["Sector"].iloc[counter],
+                            "industry": data["Industry"].iloc[counter],
+                            "country": data["Country"].iloc[counter],
+                            "market_cap": data["Market Cap"].iloc[counter],
+                            "pe": data["P/E"].iloc[counter],
+                            "forward_pe": data["Forward P/E"].iloc[counter],
+                            "peg": data["PEG"].iloc[counter],
+                            "ps": data["P/S"].iloc[counter],
+                            "pb": data["P/B"].iloc[counter],
+                            "p_cash": data["P/Cash"].iloc[counter],
+                            "p_free_cash_flow": data["P/Free Cash Flow"].iloc[counter],
+                            "dividend_yield_percentage": data["Dividend Yield"].iloc[counter],
+                            "payout_ratio_percentage": data["Payout Ratio"].iloc[counter],
+                            "eps_ttm": data["EPS (ttm)"].iloc[counter],
+                            "eps_growth_this_year_percentage": data["EPS growth this year"].iloc[counter],
+                            "eps_growth_next_year_percentage": data["EPS growth next year"].iloc[counter],
+                            "eps_growth_past_5_years_percentage": data["EPS growth past 5 years"].iloc[counter],
+                            "eps_growth_next_5_years_percentage": data["EPS growth next 5 years"].iloc[counter],
+                            "sales_growth_past_5_years_percentage": data["Sales growth past 5 years"].iloc[counter],
+                            "eps_growth_quarter_over_quarter_percentage": data["EPS growth quarter over quarter"].iloc[counter],
+                            "sales_growth_quarter_over_quarter_percentage": data["Sales growth quarter over quarter"].iloc[counter],
+                            "shares_outstanding": data["Shares Outstanding"].iloc[counter],
+                            "share_float": data["Shares Float"].iloc[counter],
+                            "insider_ownership_percentage": data["Insider Ownership"].iloc[counter],
+                            "insider_transactions_percentage": data["Insider Transactions"].iloc[counter],
+                            "institutional_ownership_percentage": data["Institutional Ownership"].iloc[counter],
+                            "institutional_transactions_percentage": data["Institutional Transactions"].iloc[counter],
+                            "float_short_percentage": data["Float Short"].iloc[counter],
+                            "short_ratio": data["Short Ratio"].iloc[counter],
+                            "return_on_assets_percentage": data["Return on Assets"].iloc[counter],
+                            "return_on_equity_percentage": data["Return on Equity"].iloc[counter],
+                            "return_on_investment_percentage": data["Return on Investment"].iloc[counter],
+                            "current_ratio": data["Current Ratio"].iloc[counter],
+                            "quick_ratio": data["Quick Ratio"].iloc[counter],
+                            "lt_debt_equity": data["LT Debt/Equity"].iloc[counter],
+                            "total_debt_equity": data["Total Debt/Equity"].iloc[counter],
+                            "gross_margin_percentage": data["Gross Margin"].iloc[counter],
+                            "operating_margin_percentage": data["Operating Margin"].iloc[counter],
+                            "profit_margin_percentage": data["Profit Margin"].iloc[counter],
+                            "performance_week_percentage": data["Performance (Week)"].iloc[counter],
+                            "performance_month_percentage": data["Performance (Month)"].iloc[counter],
+                            "performance_quarter_percentage": data["Performance (Quarter)"].iloc[counter],
+                            "performance_half_year_percentage": data["Performance (Half Year)"].iloc[counter],
+                            "performance_year_percentage": data["Performance (Year)"].iloc[counter],
+                            "performance_ytd_percentage": data["Performance (YTD)"].iloc[counter],
+                            "beta": data["Beta"].iloc[counter],
+                            "average_true_range": data["Average True Range"].iloc[counter],
+                            "volatility_week_percentage": data["Volatility (Week)"].iloc[counter],
+                            "volatility_month_percentage": data["Volatility (Month)"].iloc[counter],
+                            "simple_moving_average_20_day_percentage": data["20-Day Simple Moving Average"].iloc[counter],
+                            "simple_moving_average_50_day_percentage": data["50-Day Simple Moving Average"].iloc[counter],
+                            "simple_moving_average_200_day_percentage": data["200-Day Simple Moving Average"].iloc[counter],
+                            "high_50_day_percentage": data["50-Day High"].iloc[counter],
+                            "low_50_day_percentage": data["50-Day Low"].iloc[counter],
+                            "high_52_week_percentage": data["52-Week High"].iloc[counter],
+                            "low_52_week_percentage": data["52-Week Low"].iloc[counter],
+                            "relative_strength_index_14": data["Relative Strength Index (14)"].iloc[counter],
+                            "change_from_open_percentage": data["Change from Open"].iloc[counter],
+                            "gap_percentage": data["Gap"].iloc[counter],
+                            "analyst_recom": data["Analyst Recom"].iloc[counter],
+                            "average_volume": data["Average Volume"].iloc[counter],
+                            "relative_volume": data["Relative Volume"].iloc[counter],
+                            "finviz_price": data["Price"].iloc[counter],
+                            "change_percentage": data["Change"].iloc[counter],
+                            "volume": data["Volume"].iloc[counter],
+                            "earnings_date": data["Earnings Date"].iloc[counter],
+                            "target_price": data["Target Price"].iloc[counter],
+                            "ipo_date": data["IPO Date"].iloc[counter],
+                            "after_hours_close": data["After-Hours Close"].iloc[counter],
+                            "after_hours_change_percentage": data["After-Hours Change"].iloc[counter],
+                        }
+                    }
+                    FinvizSectorData.objects.update_or_create(**ibd_data_kwargs)
+                except Exception as e:
+                    print(e)
+                    errors.append(str(e))
+
+        self.is_processed = True
+        self.is_processing = False
+        self.processed_date = pytz.utc.localize(datetime.utcnow())
+        self.errors = ", ".join(errors)
+        self.save()                
+        print("Finviz sector data processed ...")
