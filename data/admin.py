@@ -1,6 +1,6 @@
 from django.contrib import admin
 from rangefilter.filters import DateRangeFilter, DateTimeRangeFilter
-from .models import Data, Symbol, Timeframe, TimeframeAlias, IbdData, IbdDataFile, FinvizDataFile, FinvizSectorData, FinvizSectorDataFile
+from .models import Data, Symbol, Timeframe, TimeframeAlias, IbdData, IbdDataFile, FinvizDataFile, FinvizSectorData, FinvizSectorDataFile, Sector
 from import_export.admin import ExportActionMixin, ExportMixin
 from import_export.fields import Field
 from import_export import resources
@@ -64,6 +64,10 @@ class AdminSymbol(admin.ModelAdmin):
     ordering = ("name",)
     search_fields = ("name",)
 
+class AdminSector(admin.ModelAdmin):
+    list_display = ("name",)
+    ordering = ("name",)
+    search_fields = ("name",)
 
 class AdminData(admin.ModelAdmin):
     list_display = (
@@ -234,7 +238,8 @@ class AdminIbdData(ExportActionMixin, admin.ModelAdmin):
         "symbol__name",
     )
 
-    actions = [generate_sector_scattered_chart, generate_sector_line_chart]
+    actions = [generate_scattered_chart, generate_line_chart]
+
 
     """
     def get_changelist(self, request, **kwargs):
@@ -289,7 +294,8 @@ class AdminFinvizSectorData(ExportActionMixin, admin.ModelAdmin):
         "sector__name",
     )
 
-    actions = [generate_scattered_chart, generate_line_chart]
+    actions = [generate_sector_scattered_chart, generate_sector_line_chart]
+    
 
     """
     def get_changelist(self, request, **kwargs):
@@ -414,6 +420,7 @@ class AdminFinvizSectorDataFile(admin.ModelAdmin):
 admin.site.register(TimeframeAlias, AdminTimeframeAlias)
 admin.site.register(Timeframe, AdminTimeframe)
 admin.site.register(Symbol, AdminSymbol)
+admin.site.register(Sector, AdminSector)
 admin.site.register(Data, AdminData)
 admin.site.register(IbdData, AdminIbdData)
 admin.site.register(IbdDataFile, AdminIbdDataFile)
