@@ -95,8 +95,8 @@ class FinvizSectorDataResource(resources.ModelResource):
     class Meta:
         model = FinvizSectorData
 
-    def dehydrate_symbol(self, obj):
-        return obj.symbol.name        
+    def dehydrate_sector(self, obj):
+        return obj.sector.name        
 
 
 class AdminIbdDataChangeList(ChangeList):
