@@ -28,6 +28,25 @@ def generate_line_chart(modeladmin, request, queryset):
     return HttpResponse(chart)
 
 
+
+
+@admin.action(description='Generate scattered chart for given query based on their Price change in percentage field')
+def generate_sector_scattered_chart(modeladmin, request, queryset):
+    x = list(queryset.values_list("sector", flat=True))
+    y = list(queryset.values_list("performance_week_percentage", flat = True))
+    fig =px.scatter(x=x, y=y, trendline="ols")
+    fig.data[1].line.color = 'red'
+    chart = fig.to_html()  
+    return HttpResponse(chart)
+
+@admin.action(description='Generate line chart for given query based on their Price change in percentage field')
+def generate_sector_line_chart(modeladmin, request, queryset):
+    x = list(queryset.values_list("date", flat=True))
+    y = list(queryset.values_list("performance_week_percentage", flat = True))
+    fig =px.line(x=x, y=y)
+    chart = fig.to_html()  
+    return HttpResponse(chart)
+
 class AdminTimeframeAlias(admin.ModelAdmin):
     list_display = ("name",)
     ordering = ("name",)
@@ -215,7 +234,7 @@ class AdminIbdData(ExportActionMixin, admin.ModelAdmin):
         "symbol__name",
     )
 
-    actions = [generate_scattered_chart, generate_line_chart]
+    actions = [generate_sector_scattered_chart, generate_sector_line_chart]
 
     """
     def get_changelist(self, request, **kwargs):
