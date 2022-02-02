@@ -30,7 +30,7 @@ def generate_line_chart(modeladmin, request, queryset):
 
 
 
-@admin.action(description='Generate scattered chart for given query based on their Price change in percentage field')
+@admin.action(description='Generate scattered chart for given query based on their weekly performance')
 def generate_sector_scattered_chart(modeladmin, request, queryset):
     x = list(queryset.values_list("sector", flat=True))
     y = list(queryset.values_list("performance_week_percentage", flat = True))
@@ -39,7 +39,7 @@ def generate_sector_scattered_chart(modeladmin, request, queryset):
     chart = fig.to_html()  
     return HttpResponse(chart)
 
-@admin.action(description='Generate line chart for given query based on their Price change in percentage field')
+@admin.action(description='Generate line chart for given query based on their weekly performance')
 def generate_sector_line_chart(modeladmin, request, queryset):
     x = list(queryset.values_list("date", flat=True))
     y = list(queryset.values_list("performance_week_percentage", flat = True))
