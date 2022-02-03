@@ -36,7 +36,10 @@ class RunnerStatus(models.Model):
             except:
                 pass
 
-            command = f"{settings.PYTHON_EXE} manage.py start_runner"
+            command = (
+                f"cd {str(settings.BASE_DIR)}"
+                f"{settings.PYTHON_EXE} manage.py start_runner"
+            )
             
             process = multiprocessing.Process(target=run_command_from_process, name='Runner', args=(command,))
             process.start()
