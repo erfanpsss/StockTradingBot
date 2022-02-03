@@ -800,7 +800,7 @@ class FinvizSectorDataFile(models.Model):
 class FinvizInsiderData(models.Model):
     INSIDER_TRANSACTION_TYPE_CHOICES = (
         ("Buy", "Buy"),
-        ("Sell", "Sell"),
+        ("Sale", "Sale"),
         ("Option Exercise", "Option Exercise")
     )
     id = models.AutoField(primary_key=True)

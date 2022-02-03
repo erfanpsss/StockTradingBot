@@ -330,9 +330,13 @@ class AdminFinvizInsiderData(ExportActionMixin, admin.ModelAdmin):
     list_filter = (
         "date",
         ("date", DateRangeFilter),      
+        "transaction",
+        "owner",
+        "symbol",
     )
     search_fields = (
         "date",
+        "owner",
         "symbol__name",
     )
     
