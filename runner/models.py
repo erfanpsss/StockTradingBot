@@ -37,7 +37,7 @@ class RunnerStatus(models.Model):
                 pass
 
             command = (
-                f"cd {str(settings.BASE_DIR)}"
+                f"cd {str(settings.BASE_DIR)} &"
                 f"{settings.PYTHON_EXE} manage.py start_runner"
             )
             
