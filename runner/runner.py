@@ -2,7 +2,7 @@ from strategy.models import Strategy
 from typing import Union, List
 import time
 from django.core.management import call_command
-from data.models import FinvizDataFile, FinvizSectorDataFile
+from data.models import FinvizDataFile, FinvizSectorDataFile, FinvizInsiderDataFile
 from runner.models import RunnerStatus
 import datetime
 import pytz
@@ -16,6 +16,7 @@ class Runner:
         if self.runner_status.enable_finviz:
             FinvizDataFile.create_finviz_data_automatically()
             FinvizSectorDataFile.create_finviz_data_automatically()
+            FinvizInsiderDataFile.create_finviz_data_automatically()
 
     def run(self):
         while True:
