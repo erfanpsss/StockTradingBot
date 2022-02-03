@@ -1,4 +1,5 @@
 {% extends "admin/base_site.html" %}
+{% load custom_tags %}
 
 {% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
 
@@ -6,4 +7,17 @@
 <h1 id="site-name"><a href="{% url 'admin:index' %}">{{ site_header|default:_('Django administration') }}</a></h1>
 {% endblock %}
 
-{% block nav-global %}<a href="{% url 'admin:update_site' %}">Update Application</a>{% endblock %}
+{% block nav-global %}
+UTC Time :
+<p id="global-utc-time"></p>
+<a href="{% url 'admin:update_site' %}"> Update Application </a>
+<script>
+    function UptadeUtcTime() {
+        const d = new Date();
+        let text = d.toUTCString();
+        document.getElementById("global-utc-time").innerHTML = text;
+    } 
+    setInterval(UptadeUtcTime, 1);
+
+</script>
+{% endblock %}
