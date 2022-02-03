@@ -1,6 +1,6 @@
 from django.contrib import admin
 from rangefilter.filters import DateRangeFilter, DateTimeRangeFilter
-from .models import Data, Symbol, Timeframe, TimeframeAlias, IbdData, IbdDataFile, FinvizDataFile, FinvizSectorData, FinvizSectorDataFile, Sector
+from .models import Data, Symbol, Timeframe, TimeframeAlias, IbdData, IbdDataFile, FinvizDataFile, FinvizSectorData, FinvizSectorDataFile, Sector, FinvizInsiderDataFile, FinvizInsiderData
 from import_export.admin import ExportActionMixin, ExportMixin
 from import_export.fields import Field
 from import_export import resources
@@ -30,7 +30,7 @@ def generate_line_chart(modeladmin, request, queryset):
 
 
 
-@admin.action(description='Generate scattered chart for given query based on their Price change in percentage field')
+@admin.action(description='Generate scattered chart for given query based on their weekly performance')
 def generate_sector_scattered_chart(modeladmin, request, queryset):
     x = list(queryset.values_list("sector", flat=True))
     y = list(queryset.values_list("performance_week_percentage", flat = True))
@@ -39,7 +39,7 @@ def generate_sector_scattered_chart(modeladmin, request, queryset):
     chart = fig.to_html()  
     return HttpResponse(chart)
 
-@admin.action(description='Generate line chart for given query based on their Price change in percentage field')
+@admin.action(description='Generate line chart for given query based on their weekly performance')
 def generate_sector_line_chart(modeladmin, request, queryset):
     x = list(queryset.values_list("date", flat=True))
     y = list(queryset.values_list("performance_week_percentage", flat = True))
@@ -309,7 +309,36 @@ class AdminFinvizSectorData(ExportActionMixin, admin.ModelAdmin):
 
 
 
+class AdminFinvizInsiderData(ExportActionMixin, admin.ModelAdmin):
+    list_per_page = 10
+    list_select_related = ('symbol',)
+    resource_class = FinvizSectorDataResource
+    list_display = (
+        "id",
+        "created_date",
+        "date",
+        "symbol",
+        "owner",
+        "relationship",
+        "transaction",
+        "cost",
+        "shares",
+        "value",
+        "shares_total",
+        "sec_form_4",
+    )
+    list_filter = (
+        "date",
+        ("date", DateRangeFilter),      
+    )
+    search_fields = (
+        "date",
+        "symbol__name",
+    )
+    
 
+    def get_rangefilter_created_at_title(self, request, field_path):
+        return 'Date range'
 
 
 
@@ -414,6 +443,40 @@ class AdminFinvizSectorDataFile(admin.ModelAdmin):
         "processed_date",
     )
 
+class AdminFinvizInsiderDataFile(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "creator",
+        "created_date",
+        "data_date",
+        "file",
+        "is_processed",
+        "is_processing",
+        "processed_date",
+        "errors",        
+    )
+    list_filter = (
+        "id",
+        "creator",
+        "created_date",
+        "data_date",
+        "is_processed",
+        "is_processing",
+        "processed_date",
+    )
+    ordering = ("created_date",)
+    search_fields = (
+        "id",
+        "creator",
+        "file",
+        "created_date",
+        "data_date",
+        "is_processed",
+        "is_processing",
+        "processed_date",
+    )
+
+
 
 
 
@@ -427,3 +490,5 @@ admin.site.register(IbdDataFile, AdminIbdDataFile)
 admin.site.register(FinvizDataFile, AdminFinvizDataFile)
 admin.site.register(FinvizSectorData, AdminFinvizSectorData)
 admin.site.register(FinvizSectorDataFile, AdminFinvizSectorDataFile)
+admin.site.register(FinvizInsiderDataFile, AdminFinvizInsiderDataFile)
+admin.site.register(FinvizInsiderData, AdminFinvizInsiderData)

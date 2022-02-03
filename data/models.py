@@ -13,6 +13,7 @@ import requests
 from django.conf import settings
 from util import isnan
 from django.core.files.base import ContentFile, File
+from bs4 import BeautifulSoup
 
 FINVIZ_DATE_FORMAT = "%m/%d/%Y"
 FINVIZ_DATETIME_FORMAT = "%m/%d/%Y %I:%M:%S %p"
@@ -788,3 +789,208 @@ class FinvizSectorDataFile(models.Model):
         self.errors = ", ".join(errors)
         self.save()                
         print("Finviz sector data processed ...")
+
+
+
+
+
+
+
+
+class FinvizInsiderData(models.Model):
+    INSIDER_TRANSACTION_TYPE_CHOICES = (
+        ("Buy", "Buy"),
+        ("Sell", "Sell"),
+        ("Option Exercise", "Option Exercise")
+    )
+    id = models.AutoField(primary_key=True)
+    created_date = models.DateField()
+    date = models.DateField()
+    symbol = models.ForeignKey(Symbol, on_delete=models.CASCADE, related_name="finviz_insider_data")
+    owner = models.CharField(max_length = 200, default = None, blank = True, null = True)
+    relationship = models.CharField(max_length = 200, default = None, blank = True, null = True)
+    transaction = models.CharField(max_length = 200, default = None, blank = True, null = True, choices=INSIDER_TRANSACTION_TYPE_CHOICES)
+    cost = models.FloatField(default = None, blank = True, null = True)
+    shares = models.FloatField(default = None, blank = True, null = True)
+    value = models.FloatField(default = None, blank = True, null = True)
+    shares_total = models.FloatField(default = None, blank = True, null = True)
+    sec_form_4 = models.DateTimeField(default = None, blank = True, null = True)
+
+    class Meta:
+        unique_together = ("date", "symbol", "sec_form_4", "owner")
+        verbose_name = "Finviz insider data"
+        verbose_name_plural = "Finviz insider data"
+
+
+
+
+class FinvizInsiderDataFile(models.Model):
+    CREATOR_CHOICES = (
+        ("Manual", "Manual"),
+        ("Automatic", "Automatic"),
+    )
+    id = models.AutoField(primary_key=True)
+    creator = models.CharField(max_length=20, choices=CREATOR_CHOICES, default="Manual")
+    file = models.FileField(upload_to="finviz_insider_data_files")
+    created_date = models.DateTimeField(auto_now_add=True)
+    data_date = models.DateField()
+    is_processed = models.BooleanField(default=False)
+    is_processing = models.BooleanField(default=False)
+    processed_date = models.DateTimeField(blank = True, null = True)
+    errors = models.TextField(blank=True, null=True)
+
+    
+    class Meta:
+        verbose_name = "Finviz insider data file"
+        verbose_name_plural = "Finviz insider data files"
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        if not self.is_processed and not self.is_processing:
+            thread = threading.Thread(target=self.create_finviz_record, args=())
+            thread.start()
+
+
+    def extract_page_info(self, content):
+        today = datetime.utcnow().date()
+        soup = BeautifulSoup(content)
+        columns = [
+            "Ticker",
+            "Owner",
+            "Relationship",
+            "Date",
+            "Transaction",
+            "Cost",
+            "Shares",
+            "Value",
+            "Owner_Shares_Total",
+            "Sec_Date",
+        ]
+        all_rows = []
+        all_transaction_classes = [
+            "insider-option-row",
+            "insider-buy-row-1",
+            "insider-buy-row-2",
+            "insider-sale-row-1",
+            "insider-sale-row-2",
+        ]
+        for transaction_class in all_transaction_classes:
+            all_rows += soup.body.find_all(attrs={"class":transaction_class})
+        
+        data_list = []
+        for row in all_rows:
+            data_list.append([])
+            fields = row.find_all("td")
+            for counter, field in enumerate(fields):
+                if counter in (5, 6, 7, 8):
+                    value = float(field.text.replace(",", ""))
+                elif counter == 3:
+                    value = field.text
+                    value = str(today.year) + " " + value
+                    value = datetime.strptime(value, "%Y %b %d")
+                elif counter == len(fields) - 1:
+                    value = field.find_all("a")[0].text
+                    value = str(today.year) + " " + value
+                    value = pytz.utc.localize(datetime.strptime(value, "%Y %b %d %H:%M %p"))
+                elif field.find_all("a"):
+                    value = field.find_all("a")[0].text
+                else:
+                    value = field.text
+                data_list[-1].append(value)
+                
+        data = pd.DataFrame(data_list, columns=columns)
+        return data
+
+    @classmethod
+    def get_finviz_data(cls):
+        base_url = "https://finviz.com/"
+        insider_url = f"{base_url}insidertrading.ashx"
+        login_url = "https://finviz.com/login_submit.ashx"
+        user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/97.0.4692.99 Safari/537.36 Edg/97.0.1072.76"
+        email = settings.FINVIZ_USERNAME
+        password = settings.FINVIZ_PASSWORD
+        login_payload = {
+            "email": email,
+            "password": password
+        }
+        headers = {
+            "user-agent": user_agent
+        }
+        session = requests.Session()
+        login_response = session.post(login_url, data=login_payload, headers=headers)
+        insider_response = session.get(insider_url, headers=headers)
+        
+        return insider_response.content.decode('utf-8')
+
+    @classmethod
+    def create_finviz_data_automatically(cls):
+        print("Getting finviz insider data automatically")
+        try:
+            now = pytz.utc.localize(datetime.utcnow())
+            if now.hour < 23 or now.weekday() in [6, 7]:
+                return
+            today = now.date()
+            if cls.objects.filter(data_date = today).exists():
+                return
+            finviz_data = cls.get_finviz_data()
+            file_name = f"finviz_insider_data_{today}.html"
+            file = ContentFile(finviz_data)
+            new_file = cls()
+            new_file.data_date = today
+            new_file.creator = "Automatic"
+            new_file.file.save(file_name, file, save = True)
+            new_file.save()
+            print("Finviz insider file was saved")
+        except Exception as e:
+            print(e)
+
+
+    def prepare_data(self):
+        data = self.extract_page_info(self.file.file)
+        data.replace(to_replace=[np.nan, math.nan], value=None, inplace=True)
+        record_datetime = self.data_date or datetime.utcnow().date()
+        return data, record_datetime
+
+    def create_finviz_record(self):
+        self.is_processing = True
+        self.save()
+        errors = []
+        data = pd.DataFrame()
+        try:
+            data, record_datetime=self.prepare_data()
+        except Exception as e:
+            print(e)
+            errors.append(str(e))
+        if not data.empty:
+            for counter, index in enumerate(data.index):
+                try:
+                    symbol_temp = data["Ticker"].iloc[counter]
+                    if not symbol_temp:
+                        continue
+                    symbol_obj, created = Symbol.objects.get_or_create(name = symbol_temp)
+                    ibd_data_kwargs = {
+                        "symbol": symbol_obj,
+                        "owner": data["Owner"].iloc[counter],
+                        "date": data["Date"].iloc[counter],
+                        "sec_form_4": data["Sec_Date"].iloc[counter],
+                        "defaults": {
+                            "created_date": record_datetime,
+                            "relationship": data["Relationship"].iloc[counter],
+                            "transaction": data["Transaction"].iloc[counter],
+                            "cost": data["Cost"].iloc[counter],
+                            "shares": data["Shares"].iloc[counter],
+                            "value": data["Value"].iloc[counter],
+                            "shares_total": data["Owner_Shares_Total"].iloc[counter],
+                        }
+                    }
+                    FinvizInsiderData.objects.update_or_create(**ibd_data_kwargs)
+                except Exception as e:
+                    print(e)
+                    errors.append(str(e))
+
+        self.is_processed = True
+        self.is_processing = False
+        self.processed_date = pytz.utc.localize(datetime.utcnow())
+        self.errors = ", ".join(errors)
+        self.save()                
+        print("Finviz insider data processed ...")
