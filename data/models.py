@@ -656,7 +656,7 @@ class FinvizSectorDataFile(models.Model):
     def get_finviz_data(cls):
         base_url = "https://elite.finviz.com/"
         screener_url = f"{base_url}groups.ashx?g=sector&v=152&o=name&c=0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26"
-        export_button_url = f"{base_url}grp_export.ashx?g=sector&amp;v=152&amp;o=name"
+        export_button_url = f"{base_url}grp_export.ashx?g=sector&v=152&o=name"
         login_url = "https://finviz.com/login_submit.ashx"
         user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/97.0.4692.99 Safari/537.36 Edg/97.0.1072.76"
         email = settings.FINVIZ_USERNAME
