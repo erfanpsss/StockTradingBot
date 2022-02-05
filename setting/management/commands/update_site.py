@@ -2,7 +2,6 @@ from django.core.management.base import BaseCommand, CommandParser
 from django.conf import settings
 import os
 from multiprocessing import Process
-from runner.models import RunnerStatus
 
 
 def get_pid(server_process_output):
@@ -45,7 +44,6 @@ def run_cmd_command(base_dir, git_branch, python_exe, server_post):
         f"{python_exe} manage.py runserver 127.0.0.1:{server_post}"
     )
     os.system(f'{run_server_command}')
-    RunnerStatus.objects.first().handle_start_runner()
 
 class Command(BaseCommand): 
 
