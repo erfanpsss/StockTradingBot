@@ -9,15 +9,10 @@ import uuid
 
 class Broker:
 
-    @staticmethod
-    def setup(module: str, *args, **kwargs) -> "Broker":
-        broker_main_module = importlib.import_module("broker.brokers")
-        broker_class = getattr(broker_main_module, module)
-        broker = broker_class(*args, **kwargs)
-        return broker
-
-    def __init__(self, *args, **kwargs):
-        self.storage, is_created = BrokerStorage.objects.get_or_create(broker = self.__class__.__name__)
+    def __init__(self, is_sandbox, public_key, secret_key):
+        self.is_sandbox = is_sandbox
+        self.public_key = public_key
+        self.secret_key = secret_key
 
     def connect(self):
         pass
@@ -52,6 +47,53 @@ class Broker:
 
     def cancel_order(self, *args, **kwargs):
         pass
+
+
+
+
+
+class InteractiveBrokers:
+
+    def connect(self):
+        pass
+
+    @property
+    def account_info(self):
+        pass
+
+    @property
+    def balance(self):
+        pass
+
+    @property
+    def equity(self):
+        pass
+
+    @property
+    def used_margin(self):
+        pass
+
+    def open_position(self, *args, **kwargs):
+        pass
+
+    def close_position(self, *args, **kwargs):
+        pass
+
+    def get_data(self, *args, **kwargs):
+        pass
+
+    def create_order(self, *args, **kwargs):
+        pass
+
+    def cancel_order(self, *args, **kwargs):
+        pass
+
+
+
+
+
+
+
 
 
 class FakeBroker(Broker):
@@ -117,8 +159,7 @@ class FakeBroker(Broker):
             "executor": executor
         }
 
-        trade: Trade = Trade.objects.create(**data)
-        return trade
+        return position_id
 
     def close_position(self, *args, **kwargs):
         position_size: float = kwargs.get("position_size")
@@ -149,8 +190,7 @@ class FakeBroker(Broker):
             "parent_trade": parent_trade
         }
 
-        trade: Trade = Trade.objects.create(**data)
-        return trade
+        return position_id
 
     def get_data(self, *args, **kwargs):
         pass
