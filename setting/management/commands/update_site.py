@@ -2,8 +2,7 @@ from django.core.management.base import BaseCommand, CommandParser
 from django.conf import settings
 import os
 from multiprocessing import Process
-from runner.models import RunnerStatus
-
+import sys
 
 def get_pid(server_process_output):
     pid = []
@@ -17,6 +16,18 @@ def get_pid(server_process_output):
 
 
 def run_cmd_command(base_dir, git_branch, python_exe, server_post):
+    import django
+    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    sys.path.append(BASE_DIR)
+
+    os.environ["DJANGO_SETTINGS_MODULE"] = "stocktrading.settings"
+    os.environ.setdefault(
+        "DJANGO_SETTINGS_MODULE",
+        "stocktrading.settings",
+    )
+    django.setup()
+    from runner.models import RunnerStatus
+
     commands = (
         f"cd {base_dir} &"
         f"git checkout main &"
