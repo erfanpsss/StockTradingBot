@@ -32,7 +32,7 @@ class RunnerStatus(models.Model):
         if self.enable:
             try:
                 existing_thread = getProcessByName("Runner")
-                existing_thread.terminate()
+                existing_thread.join()
             except:
                 pass
 
