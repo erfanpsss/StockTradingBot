@@ -41,6 +41,7 @@ def run_cmd_command(base_dir, git_branch, python_exe, server_post):
         
     run_server_command = (
         f"cd {base_dir} &"
+        f"{python_exe} manage.py refresh_runner"
         f"{python_exe} manage.py runserver 127.0.0.1:{server_post}"
     )
     os.system(f'{run_server_command}')
