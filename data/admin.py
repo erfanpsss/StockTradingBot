@@ -241,10 +241,8 @@ class AdminIbdData(ExportActionMixin, admin.ModelAdmin):
     actions = [generate_scattered_chart, generate_line_chart]
 
 
-    """
     def get_changelist(self, request, **kwargs):
         return AdminIbdDataChangeList  # PUT YOU OWERRIDEN CHANGE LIST HERE
-    """
 
     def get_rangefilter_created_at_title(self, request, field_path):
         return 'Date range'
