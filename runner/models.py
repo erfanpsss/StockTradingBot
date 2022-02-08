@@ -2,10 +2,13 @@ from pyexpat import model
 from django.db import models
 import threading
 import multiprocessing
-from util import getThreadByName, getProcessByName
+from util import getThreadByName, getProcessByName, terminate_process_by_id
 from django.conf import settings
 import os
+import signal
 from .seperate_process_funcs import run_command_from_process
+import time
+import psutil
 
 class RunnerStatus(models.Model):
     id = models.AutoField(primary_key=True)
@@ -14,6 +17,7 @@ class RunnerStatus(models.Model):
     enable_strategies = models.BooleanField(default=False)
     loop_wait = models.IntegerField(default=60)
     last_run_time = models.DateTimeField(blank = True, null = True)
+    pid = models.CharField(max_length=50, blank=True, null=True)
 
     def __str__(self):
         return "Active" if self.enable else "Inactive"
@@ -30,24 +34,24 @@ class RunnerStatus(models.Model):
         from runner.runner import Runner
         
         if self.enable:
-            try:
-                existing_thread = getProcessByName("Runner")
-                existing_thread.join()
-            except:
-                pass
+
+            terminate_process_by_id(self.pid)
 
             command = (
                 f"cd {str(settings.BASE_DIR)} &"
                 f"{settings.PYTHON_EXE} manage.py start_runner"
             )
             
-            process = multiprocessing.Process(target=run_command_from_process, name='Runner', args=(command,))
+            process = multiprocessing.Process(target=run_command_from_process, args=(command,))
             process.start()
+            self.pid = str(process.pid)
+            self.save(update_fields = ["pid",])
 
         elif not self.enable:
             try:
-                existing_thread = getProcessByName("Runner")
-                existing_thread.join()
+                terminate_process_by_id(self.pid)
+                self.pid = None
+                self.save(update_fields = ["pid",])                
             except:
                 pass
 
@@ -55,5 +59,7 @@ class RunnerStatus(models.Model):
         if not self.pk and RunnerStatus.objects.count() >= 1:
             return
         super().save(*args, **kwargs)
-        self.handle_start_runner()
+        if kwargs.get("update_fields", [None,])[0] != "pid" and len(kwargs.get("update_fields", [])) != 1:
+            self.handle_start_runner()
+
 
