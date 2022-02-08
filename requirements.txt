@@ -102,6 +102,7 @@ platformdirs==2.4.1
 plotly==5.5.0
 pre-commit==2.16.0
 protobuf==3.19.1
+psutil==5.9.0
 psycopg2==2.9.3
 pyasn1==0.4.8
 pyasn1-modules==0.2.8

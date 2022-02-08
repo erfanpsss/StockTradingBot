@@ -3,6 +3,7 @@ import math
 import numpy as np
 import threading
 import multiprocessing
+import os
 
 def isnan(value):
     is_nan_np_status = False
@@ -44,7 +45,14 @@ def getThreadByName(name):
             return thread
 
 def getProcessByName(name):
-    processes = multiprocessing.enumerate() #Threads list
+    processes = multiprocessing.active_children() #Processes list
     for process in processes:
         if process.name == name:
             return process
+
+def terminate_process_by_id(pid):
+    try:
+        stop_server_command = f"taskkill /PID {pid} /F /T"
+        os.system(f'{stop_server_command}')
+    except Exception as e:
+        print(e)
