@@ -285,11 +285,14 @@ class AdminFinvizSectorData(ExportActionMixin, admin.ModelAdmin):
     )
     list_filter = (
         "date",
-        ("date", DateRangeFilter),      
+        ("date", DateRangeFilter),    
+        "sector",  
+
     )
     search_fields = (
         "date",
         "sector__name",
+        "sector",
     )
 
     actions = [generate_sector_scattered_chart, generate_sector_line_chart]
