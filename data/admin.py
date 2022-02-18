@@ -5,9 +5,12 @@ from import_export.admin import ExportActionMixin, ExportMixin
 from import_export.fields import Field
 from import_export import resources
 from django.db.models import F
+from django.contrib.postgres.aggregates import ArrayAgg
 from django.contrib.admin.views.main import ChangeList
 from django.http import HttpResponse
 import plotly.express as px
+import plotly.graph_objects as go
+import pandas as pd
 
 
 @admin.action(description='Generate scattered chart for given query based on their Price change in percentage field')
@@ -49,9 +52,13 @@ def generate_sector_line_chart(modeladmin, request, queryset):
 
 @admin.action(description='Generate multi line chart for given query based on their market cap')
 def generate_sector_multi_line_chart(modeladmin, request, queryset):
-    x = list(queryset.values_list("date", flat=True))
-    y = list(queryset.values_list("market_cap", flat = True))
-    fig =px.line(x=x, y=y)
+    data=pd.DataFrame(queryset.values("sector").annotate(mc=ArrayAgg("market_cap"), time=ArrayAgg("date")).values("mc", "time"))
+    print(data)
+    fig = go.Figure()
+    for counter, index in enumerate(data.index):
+        fig.add_trace(go.Scatter(x=data["time"].iloc[counter], y=data["mc"].iloc[counter],
+                        mode='lines',
+                        name='lines'))
     chart = fig.to_html()  
     return HttpResponse(chart)
 
