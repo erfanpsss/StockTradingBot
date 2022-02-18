@@ -14,6 +14,7 @@ from django.conf import settings
 from util import isnan
 from django.core.files.base import ContentFile, File
 from bs4 import BeautifulSoup
+from util.models_choices import *
 
 FINVIZ_DATE_FORMAT = "%m/%d/%Y"
 FINVIZ_DATETIME_FORMAT = "%m/%d/%Y %I:%M:%S %p"
@@ -59,6 +60,9 @@ class Timeframe(models.Model):
 
     def __str__(self):
         return self.name
+
+
+
 
 class Data(models.Model):
     id = models.AutoField(primary_key=True)
@@ -317,10 +321,6 @@ class IbdDataFile(models.Model):
         print("IBD data processed ...")
 
 class FinvizDataFile(models.Model):
-    CREATOR_CHOICES = (
-        ("Manual", "Manual"),
-        ("Automatic", "Automatic"),
-    )
     id = models.AutoField(primary_key=True)
     creator = models.CharField(max_length=20, choices=CREATOR_CHOICES, default="Manual")
     file = models.FileField(upload_to="finviz_data_files")
@@ -627,10 +627,7 @@ class FinvizSectorData(models.Model):
         verbose_name_plural = "Finviz sector data"
 
 class FinvizSectorDataFile(models.Model):
-    CREATOR_CHOICES = (
-        ("Manual", "Manual"),
-        ("Automatic", "Automatic"),
-    )
+
     id = models.AutoField(primary_key=True)
     creator = models.CharField(max_length=20, choices=CREATOR_CHOICES, default="Manual")
     file = models.FileField(upload_to="finviz_sector_data_files")
@@ -825,10 +822,7 @@ class FinvizInsiderData(models.Model):
 
 
 class FinvizInsiderDataFile(models.Model):
-    CREATOR_CHOICES = (
-        ("Manual", "Manual"),
-        ("Automatic", "Automatic"),
-    )
+
     id = models.AutoField(primary_key=True)
     creator = models.CharField(max_length=20, choices=CREATOR_CHOICES, default="Manual")
     file = models.FileField(upload_to="finviz_insider_data_files")
