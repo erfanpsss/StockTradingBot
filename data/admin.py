@@ -13,7 +13,7 @@ import plotly.express as px
 @admin.action(description='Generate scattered chart for given query based on their Price change in percentage field')
 def generate_scattered_chart(modeladmin, request, queryset):
     x = list(queryset.values_list("symbol", flat=True))
-    y = list(queryset.values_list("price_change_in_percentage", flat = True))
+    y = list(queryset.values_list("finviz_price", flat = True))
     fig =px.scatter(x=x, y=y, trendline="ols")
     fig.data[1].line.color = 'red'
     chart = fig.to_html()  
