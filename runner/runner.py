@@ -8,6 +8,7 @@ import datetime
 import pytz
 from broker.models import Broker
 from trade.models import Trade
+import threading
 
 
 class Runner:
@@ -34,14 +35,46 @@ class Runner:
             FinvizSectorDataFile.create_finviz_data_automatically()
             FinvizInsiderDataFile.create_finviz_data_automatically()
 
+    def keep_broker_session_alive_thread(self):
+        while True:
+            print("Runner is pinging broker servers...")
+            self.runner_status = RunnerStatus.objects.first()
+            RunnerStatus.objects.update(last_run_time = pytz.utc.localize(datetime.datetime.utcnow()))
+            if not self.runner_status.enable:
+                break
+            if self.runner_status.enable_broker_scheduled_calls:
+                brokers = Broker.objects.all()
+                for broker in brokers:
+                    try:
+                        broker.broker.keep_auth_alive()
+                    except Exception as e:
+                        print(e)
+
+            time.sleep(self.runner_status.loop_wait)
+
+    def update_broker_account_trade_thread(self):
+        while True:
+            print("Runner is updating brokers' account and trades...")
+            self.runner_status = RunnerStatus.objects.first()
+            RunnerStatus.objects.update(last_run_time = pytz.utc.localize(datetime.datetime.utcnow()))
+            if not self.runner_status.enable:
+                break
+            self.broker_scheduled_calls()
+            time.sleep(self.runner_status.loop_wait)
+            
     def run(self):
+        thread_keep_broker_session_alive = threading.Thread(group=None, target = self.keep_broker_session_alive_thread, args=())
+        thread_update_broker_account_trade = threading.Thread(group=None, target = self.update_broker_account_trade_thread, args=())
+        thread_keep_broker_session_alive.start()
+        thread_update_broker_account_trade.start()
+
+
         while True:
             print("Runner is running...")
             self.runner_status = RunnerStatus.objects.first()
             RunnerStatus.objects.update(last_run_time = pytz.utc.localize(datetime.datetime.utcnow()))
             if not self.runner_status.enable:
                 break
-            self.broker_scheduled_calls()
             self.get_stock_data()
             if self.runner_status.enable_strategies:
                 for strategy in self.strategies:

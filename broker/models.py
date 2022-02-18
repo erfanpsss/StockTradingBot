@@ -43,8 +43,6 @@ class Broker(models.Model):
     def run_scheduled_calls(self):
         print("Updating connection")
         self.connection_update()
-        print("Pinging server")
-        self.broker.keep_auth_alive()
         print("Updating account info")
         self.refresh_account_info()
     
