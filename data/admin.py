@@ -21,7 +21,7 @@ def generate_scattered_chart(modeladmin, request, queryset):
 
 @admin.action(description='Generate line chart for given query based on their Price change in percentage field')
 def generate_line_chart(modeladmin, request, queryset):
-    x = list(queryset.values_list("date", flat=True))
+    x = list(queryset.values_list("finviz_price", flat=True))
     y = list(queryset.values_list("price", flat = True))
     fig =px.line(x=x, y=y)
     chart = fig.to_html()  

@@ -13,6 +13,7 @@ import psutil
 class RunnerStatus(models.Model):
     id = models.AutoField(primary_key=True)
     enable = models.BooleanField(default=False)
+    enable_broker_scheduled_calls = models.BooleanField(default=False)
     enable_finviz = models.BooleanField(default=False)
     enable_strategies = models.BooleanField(default=False)
     loop_wait = models.IntegerField(default=60)
