@@ -47,6 +47,15 @@ def generate_sector_line_chart(modeladmin, request, queryset):
     chart = fig.to_html()  
     return HttpResponse(chart)
 
+@admin.action(description='Generate multi line chart for given query based on their market cap')
+def generate_sector_multi_line_chart(modeladmin, request, queryset):
+    x = list(queryset.values_list("date", flat=True))
+    y = list(queryset.values_list("market_cap", flat = True))
+    fig =px.line(x=x, y=y)
+    chart = fig.to_html()  
+    return HttpResponse(chart)
+
+
 class AdminTimeframeAlias(admin.ModelAdmin):
     list_display = ("name",)
     ordering = ("name",)
@@ -295,7 +304,7 @@ class AdminFinvizSectorData(ExportActionMixin, admin.ModelAdmin):
         "sector",
     )
 
-    actions = [generate_sector_scattered_chart, generate_sector_line_chart]
+    actions = [generate_sector_scattered_chart, generate_sector_line_chart, generate_sector_multi_line_chart]
     
 
     """
