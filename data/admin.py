@@ -53,7 +53,6 @@ def generate_sector_line_chart(modeladmin, request, queryset):
 @admin.action(description='Generate multi line chart for given query based on their market cap')
 def generate_sector_multi_line_chart(modeladmin, request, queryset):
     data=pd.DataFrame(queryset.values("sector").annotate(mc=ArrayAgg("market_cap"), time=ArrayAgg("date")).values("mc", "time"))
-    print(data)
     fig = go.Figure()
     for counter, index in enumerate(data.index):
         fig.add_trace(go.Scatter(x=data["time"].iloc[counter], y=data["mc"].iloc[counter],
