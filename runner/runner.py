@@ -36,6 +36,7 @@ class Runner:
             FinvizInsiderDataFile.create_finviz_data_automatically()
 
     def keep_broker_session_alive_thread(self):
+        brokers = Broker.objects.all()
         while True:
             print("Runner is pinging broker servers...")
             self.runner_status = RunnerStatus.objects.first()
@@ -43,7 +44,6 @@ class Runner:
             if not self.runner_status.enable:
                 break
             if self.runner_status.enable_broker_scheduled_calls:
-                brokers = Broker.objects.all()
                 for broker in brokers:
                     try:
                         broker.broker.keep_auth_alive()

@@ -71,6 +71,9 @@ class Broker(models.Model):
             account_info = self.broker.account_info
             self.balance = account_info.get("balance")
             self.equity = account_info.get("equity")
+            current_storage = self.storage
+            current_storage["account_balance_info"] = account_info
+            self.storage = current_storage
             self.save()
         except Exception as e:
             print("refresh_account_info", e)
