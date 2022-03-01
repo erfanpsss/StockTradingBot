@@ -182,18 +182,7 @@ class InteractiveBrokers(BrokerProcessor):
 
     def account_balance_info(self):
         info = self.broker_request("get", self.ACCOUNT_BALANCE_INFO_URL.format(account_id = self.account_id))
-        return {
-            "availablefunds": info.get("availablefunds"),
-            "buyingpower": info.get("buyingpower"),
-            "equitywithloanvalue": info.get("equitywithloanvalue"),
-            "excessliquidity": info.get("excessliquidity"),
-            "fullavailablefunds": info.get("fullavailablefunds"),
-            "fullexcessliquidity": info.get("fullexcessliquidity"),
-            "lookaheadavailablefunds": info.get("lookaheadavailablefunds"),
-            "lookaheadexcessliquidity": info.get("lookaheadexcessliquidity"),
-            "netliquidation": info.get("netliquidation"),
-            "totalcashvalue": info.get("totalcashvalue"),
-        }
+        return info
 
 
     @property
