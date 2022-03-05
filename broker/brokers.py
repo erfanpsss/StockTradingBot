@@ -177,7 +177,13 @@ class InteractiveBrokers(BrokerProcessor):
         account_info = self._account_info()[0]
         balance_info = self.account_balance_info()
         account_info.update(balance_info)
-        account_info.update({"balance": account_info.get("availablefunds", {}).get("amount", ""), "equity": account_info.get("availablefunds", {}).get("amount", "")})
+        account_info.update(
+            {
+                "balance": account_info.get("availablefunds", {}).get("amount", ""), 
+                "equity": account_info.get("availablefunds", {}).get("amount", ""), 
+                "buying_power": account_info.get("buyingpower", {}).get("amount", "")
+            }
+        )
         return account_info
 
     def account_balance_info(self):
