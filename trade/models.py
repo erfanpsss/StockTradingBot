@@ -1,4 +1,5 @@
 from email.policy import default
+from multiprocessing.sharedctypes import Value
 from tkinter.tix import Tree
 from turtle import pos
 from typing import Tuple
@@ -15,7 +16,7 @@ class Trade(models.Model):
     id = models.AutoField(primary_key=True)
     place_now = models.BooleanField(default=True)
     status = models.CharField(max_length=50, choices=TRADE_STATUS_CHOICES, default=TradeStatusList.PENDING_SUBMIT.value)
-    trade_type = models.CharField(max_length=10, choices=TRADE_TYPES_CHOICES)
+    trade_type = models.CharField(max_length=10, choices=TRADE_TYPES_CHOICES, default=TradeType.OPEN.value)
     order_type = models.CharField(max_length=10, choices=ORDER_TYPE_CHOICES, default=OrderType.MKT.value)
     created_at = models.DateTimeField(auto_now_add=True)
     trade_datetime = models.DateTimeField()

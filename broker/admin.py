@@ -1,3 +1,4 @@
+from attr import fields
 from django.contrib import admin
 from .models import Broker
 
@@ -31,6 +32,7 @@ class AdminBroker(admin.ModelAdmin):
         "name",
         "is_sandbox",
     )
+
 
 
 admin.site.register(Broker, AdminBroker)
