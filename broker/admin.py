@@ -16,6 +16,7 @@ class AdminBroker(admin.ModelAdmin):
         "storage",
         "balance",
         "equity",
+        "buyingpower",
         "used_margin",
         "connected", 
         "error",
