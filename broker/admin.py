@@ -13,7 +13,6 @@ class AdminBroker(admin.ModelAdmin):
         "public_key",
         "secret_key",
         "broker_class",
-        "storage",
         "balance",
         "equity",
         "buying_power",
