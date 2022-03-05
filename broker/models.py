@@ -21,6 +21,7 @@ class Broker(models.Model):
     storage = models.JSONField(default=dict, blank = True, null = True)
     balance = models.FloatField(default=0.0)
     equity = models.FloatField(default=0.0)
+    buying_power = models.FloatField(default=0.0)
     used_margin = models.FloatField(default=0.0)
     connected = models.BooleanField(default=False)
     error = models.TextField(blank=True, null=True)
@@ -71,6 +72,7 @@ class Broker(models.Model):
             account_info = self.broker.account_info
             self.balance = account_info.get("balance")
             self.equity = account_info.get("equity")
+            self.buying_power = account_info.get("buying_power")
             current_storage = self.storage
             current_storage["account_balance_info"] = account_info
             self.storage = current_storage
