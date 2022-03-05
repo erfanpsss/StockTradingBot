@@ -26,3 +26,10 @@ class TradeType(models.TextChoices):
 class PositionType(models.TextChoices):
     BUY = "buy"
     SELL = "sell"
+
+class OrderType(models.TextChoices):
+    LMT = "LMT"
+    MKT = "MKT"
+    STP = "STP"
+    STOP_LIMIT = "STOP_LIMIT"
+    MIDPRICE = "MIDPRICE"
