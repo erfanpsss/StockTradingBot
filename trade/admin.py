@@ -44,6 +44,26 @@ class AdminTrade(admin.ModelAdmin):
         "parent_trade__position_id",
     )
 
+
+    fields = (
+        "place_now",
+        "trade_type",
+        "order_type",
+        "position_type",
+        "symbol",
+        "broker",
+        "quantity",
+        "trade_price",
+        "executor",
+        "parent_trade",
+        "status",
+        "trade_datetime",
+        "position_id",
+        "sent_arguments",
+        "error",
+    )
+
+
     actions = [total_close_position]
 
 
