@@ -27,3 +27,11 @@ TRADE_STATUS_CHOICES = (
     ("Inactive", "Inactive"),
     ("Failed", "Failed"),
 )
+
+ORDER_TYPE_CHOICES = (
+    ("LMT", "LMT"),
+    ("MKT", "MKT"),
+    ("STP", "STP"),
+    ("STOP_LIMIT", "STOP_LIMIT"),
+    ("MIDPRICE", "MIDPRICE"),
+)

@@ -16,6 +16,8 @@ class Trade(models.Model):
     place_now = models.BooleanField(default=True)
     status = models.CharField(max_length=50, choices=TRADE_STATUS_CHOICES, default=TradeStatusList.PENDING_SUBMIT.value)
     trade_type = models.CharField(max_length=10, choices=TRADE_TYPES_CHOICES)
+    order_type = models.CharField(max_length=10, choices=ORDER_TYPE_CHOICES, default=OrderType.MKT.value)
+    created_at = models.DateTimeField(auto_now_add=True)
     trade_datetime = models.DateTimeField()
     broker = models.ForeignKey(Broker, on_delete=models.CASCADE, related_name="broker_trades")
     symbol = models.ForeignKey(Symbol, on_delete=models.CASCADE, related_name="trades")
@@ -30,8 +32,6 @@ class Trade(models.Model):
     executor = models.CharField(max_length=200, default="Manual")
     sent_arguments = models.JSONField(default = dict, blank=True, null=True)
     error = models.TextField(blank = True, null = True)
-
-    
 
     class Meta:
         verbose_name = "Trade"
@@ -54,6 +54,8 @@ class Trade(models.Model):
             "trade_limit": self.trade_limit,
             "quantity": self.quantity,
             "symbol": self.symbol.name,
+            "order_type": self.order_type,
+            "price": self.trade_price,
             "position_type": self.position_type,
             "trade_datetime": self.trade_datetime,
             "trade_price": self.trade_price,

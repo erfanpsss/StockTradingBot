@@ -14,6 +14,8 @@ class AdminTrade(admin.ModelAdmin):
         "status",
         "error",
         "trade_type",
+        "order_type",
+        "trade_price",
         "trade_datetime",
         "broker",
         "symbol",
