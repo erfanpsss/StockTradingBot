@@ -1,14 +1,16 @@
 from django.db import transaction
-from .base import TradeManagementBase
+from .base import StrategyBase
 from trade.models import Trade
 from typing import List, Tuple
 from util.consts import OrderType, PositionType, TradeType
 from indicator.models import Atr
 
 
-class Alpha(TradeManagementBase):
+class Alpha(StrategyBase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.risk_percent = self.strategy.strategy_configuration.get(
+            "risk_percent")
 
     def setup(self):
         super().setup()

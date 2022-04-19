@@ -84,7 +84,7 @@ class Runner:
             if self.runner_status.enable_systems:
                 for system in self.systems:
                     try:
-                        system.get_data()
+                        system.run()
                     except Exception as e:
                         print(f"Runner error for system {system.pk}", e)
 

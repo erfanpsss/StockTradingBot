@@ -63,7 +63,7 @@ class TradeManagement(models.Model):
         self.trade_management: "TradeManagement" = trade_management_class(
             **conf)
 
-    def run(self, entry_price: float, *args, **kwargs):
+    def run(self):
         self.init()
         self.trade_management.setup()
-        return self.trade_management.run(entry_price, *args, **kwargs)
+        return self.trade_management.run()

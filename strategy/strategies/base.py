@@ -14,11 +14,7 @@ class StrategyBase:
             self.strategy.storage = {}
             self.strategy.save()
 
-    def handle_manual_trades(self):
-        pass
-
     def run(self):
-        self.handle_manual_trades()
         pass
 
 

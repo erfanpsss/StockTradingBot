@@ -51,7 +51,7 @@ def default_symbol_timeframe_pair():
 
 class Strategy(models.Model):
     strategy_choices = (("SampleStrategy", "SampleStrategy"),
-                        ("TradingSystem", "TradingSystem"))
+                        ("Alpha", "Alpha"))
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=50, unique=True)
     is_active = models.BooleanField(default=False)

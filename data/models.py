@@ -112,7 +112,8 @@ class Data(models.Model):
     @classmethod
     def get_available_indicator_configuration(cls):
         from strategy.models import Strategy
-        from strategy.models import RiskManagement
+        from riskmanagement.models import RiskManagement
+        from trademanagement.models import TradeManagement
         indicators_configurations_all = []
 
         # Available indicators and configuration format
@@ -123,6 +124,12 @@ class Data(models.Model):
 
         indicators_configurations_all += list(
             Strategy.objects.filter(active=True).values_list(
+                "indicators_configuration", flat=True
+            )
+        )
+
+        indicators_configurations_all += list(
+            TradeManagement.objects.filter(active=True).values_list(
                 "indicators_configuration", flat=True
             )
         )

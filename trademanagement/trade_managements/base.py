@@ -14,7 +14,7 @@ class TradeManagementBase:
             self.Trade_management.storage = {}
             self.Trade_management.save()
 
-    def run(self, entry_price: float, *args, **kwargs):
+    def run(self):
         pass
 
 
@@ -25,8 +25,8 @@ class SampleTradeManagement(TradeManagementBase):
     def setup(self):
         super().setup()
 
-    def run(self, entry_price: float, *args, **kwargs):
-        super().run(entry_price, *args, **kwargs)
+    def run(self):
+        super().run()
         try:
             with transaction.atomic():
                 pass
