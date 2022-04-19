@@ -5,6 +5,7 @@ from broker.models import Broker
 import datetime
 from util.consts import *
 import pytz
+from strategy.models import Strategy
 
 
 class Trade(models.Model):
@@ -25,7 +26,8 @@ class Trade(models.Model):
     trade_stop_loss = models.FloatField(blank = True, null = True)
     trade_limit = models.FloatField(blank = True, null = True)
     parent_trade = models.ForeignKey("self", on_delete=models.CASCADE, related_name="sub_trades", blank = True, null = True)
-    executor = models.CharField(max_length=200, default="Manual")
+    executor = models.ForeignKey(Strategy, on_delete=models.DO_NOTHING, related_name="strategy_trades", null = True, blank = True)
+    is_executed = models.BooleanField(default=False)
     sent_arguments = models.JSONField(default = dict, blank=True, null=True)
     error = models.TextField(blank = True, null = True)
 
@@ -36,8 +38,9 @@ class Trade(models.Model):
     def save(self, *args, **kwargs):
         is_new = False if self.pk else True
         super().save(*args, **kwargs)
-        if is_new and self.place_now:
+        if is_new and self.place_now and not self.executor:
             self.open_position()
+
 
     @property
     def parent_trade_position_id(self):
@@ -72,6 +75,7 @@ class Trade(models.Model):
             self.position_id = ""
             self.error = str(e)
             self.status = TradeStatusList.FAILED.value
+        self.is_executed = True
         self.save()
 
     @classmethod
@@ -119,6 +123,7 @@ class Trade(models.Model):
             trade.position_id = ""
             trade.error = str(e)
             trade.status = TradeStatusList.FAILED.value
+        trade.is_executed = True
         trade.save()
 
     @classmethod

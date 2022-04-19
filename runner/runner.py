@@ -1,4 +1,4 @@
-from strategy.models import Strategy
+from system.models import System
 from typing import Union, List
 import time
 from django.core.management import call_command
@@ -13,7 +13,8 @@ import threading
 
 class Runner:
     def __init__(self, *args, **kwargs):
-        self.strategies: List[Strategy] = list(Strategy.objects.filter(active = True))
+        self.systems: List[System] = list(
+            System.objects.filter(active=True))
         self.runner_status = None
 
     def refresh_trade_status(self):
@@ -40,7 +41,8 @@ class Runner:
         while True:
             print("Runner is pinging broker servers...")
             self.runner_status = RunnerStatus.objects.first()
-            RunnerStatus.objects.update(last_run_time = pytz.utc.localize(datetime.datetime.utcnow()))
+            RunnerStatus.objects.update(
+                last_run_time=pytz.utc.localize(datetime.datetime.utcnow()))
             if not self.runner_status.enable:
                 break
             if self.runner_status.enable_broker_scheduled_calls:
@@ -56,31 +58,34 @@ class Runner:
         while True:
             print("Runner is updating brokers' account and trades...")
             self.runner_status = RunnerStatus.objects.first()
-            RunnerStatus.objects.update(last_run_time = pytz.utc.localize(datetime.datetime.utcnow()))
+            RunnerStatus.objects.update(
+                last_run_time=pytz.utc.localize(datetime.datetime.utcnow()))
             if not self.runner_status.enable:
                 break
             self.broker_scheduled_calls()
             time.sleep(self.runner_status.loop_wait)
-            
+
     def run(self):
-        thread_keep_broker_session_alive = threading.Thread(group=None, target = self.keep_broker_session_alive_thread, args=())
-        thread_update_broker_account_trade = threading.Thread(group=None, target = self.update_broker_account_trade_thread, args=())
+        thread_keep_broker_session_alive = threading.Thread(
+            group=None, target=self.keep_broker_session_alive_thread, args=())
+        thread_update_broker_account_trade = threading.Thread(
+            group=None, target=self.update_broker_account_trade_thread, args=())
         thread_keep_broker_session_alive.start()
         thread_update_broker_account_trade.start()
-
 
         while True:
             print("Runner is running...")
             self.runner_status = RunnerStatus.objects.first()
-            RunnerStatus.objects.update(last_run_time = pytz.utc.localize(datetime.datetime.utcnow()))
+            RunnerStatus.objects.update(
+                last_run_time=pytz.utc.localize(datetime.datetime.utcnow()))
             if not self.runner_status.enable:
                 break
             self.get_stock_data()
-            if self.runner_status.enable_strategies:
-                for strategy in self.strategies:
+            if self.runner_status.enable_systems:
+                for system in self.systems:
                     try:
-                        strategy.run()
+                        system.get_data()
                     except Exception as e:
-                        print(f"Runner error for strategy {strategy.pk}", e)
+                        print(f"Runner error for system {system.pk}", e)
 
             time.sleep(self.runner_status.loop_wait)
