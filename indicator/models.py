@@ -50,6 +50,7 @@ class IndicatorStorage(models.Model):
     id = models.AutoField(primary_key=True)
     indicator = models.TextField(unique=True)
     storage = models.JSONField(null=True, blank=True, default=dict)
+
     class Meta:
         verbose_name = "Indicator storage"
         verbose_name_plural = "Indicator storages"
@@ -142,7 +143,8 @@ class IndicatorBase(models.Model):
                     temp_value = temp_value.exclude(**{val: None}).exclude(
                         **{val: decimal.Decimal("NaN")}
                     )
-                dict_queryset[indicator] = temp_value.order_by("price_id__datetime")
+                dict_queryset[indicator] = temp_value.order_by(
+                    "price_id__datetime")
 
             except Exception as e:
                 print("sub_indicators_dict_sorted_queryset", e)
@@ -160,14 +162,29 @@ class IndicatorBase(models.Model):
         return value
 
 
+
     @property
     def previous_value(self):
         return self.previous_obj.value if self.previous_obj.value else None
 
+
+
+    def get_price_data(self, period):
+
+        price_data = Data.objects.filter(
+            Q(symbol=self.price_id.symbol)
+            & Q(timeframe=self.price_id.timeframe)
+        ).order_by("-datetime")[: self.period]
+
+        return price_data
+
+
+
     @property
     def indicator_config_name(self):
         args_str = str(
-            {str(key): str(value) for key, value in self.get_parameters_value().items()}
+            {str(key): str(value)
+             for key, value in self.get_parameters_value().items()}
         )
         whole_name = f"{self.__class__.__name__}{args_str}"
         name = (
@@ -350,7 +367,8 @@ class Atr(IndicatorBase):
                 (self.price_id.high_bid - self.price_id.previous_value),
                 (self.price_id.low_bid - self.price_id.previous_value),
             )
-            self.value = ((self.previous_value * (self.period - 1)) + tr) / self.period
+            self.value = (
+                (self.previous_value * (self.period - 1)) + tr) / self.period
         except Exception as e:
             print("Atr", e)
             self.value = 0.0
@@ -370,7 +388,8 @@ class Macd(IndicatorBase):
     signal = models.FloatField()
 
     class Meta:
-        unique_together = ("price_id", "long_period", "short_period", "signal_period")
+        unique_together = ("price_id", "long_period",
+                           "short_period", "signal_period")
 
     def calculate(self):
         """
@@ -843,7 +862,7 @@ class LstmSignalGenerator(IndicatorBase):
                     if col == self.output_column_name:
                         input_data[col + "_next"] = input_data[col].shift(-1)
 
-        return input_data[int(self.lag) + 1 :], x_columns
+        return input_data[int(self.lag) + 1:], x_columns
 
     @property
     def storage_initial(self):
@@ -880,7 +899,8 @@ class LstmSignalGenerator(IndicatorBase):
                     input_shape=(x.shape[1], len(x_columns)),
                 )
             )
-            model.add(LSTM(len(x_columns), input_shape=(x.shape[1], len(x_columns))))
+            model.add(LSTM(len(x_columns), input_shape=(
+                x.shape[1], len(x_columns))))
             model.add(Dense(int(self.dense)))
             model.compile(loss="mean_squared_error", optimizer="adam")
             model.fit(
@@ -932,12 +952,13 @@ class LstmSignalGenerator(IndicatorBase):
                     input_shape=(x.shape[1], len(x_columns)),
                 )
             )
-            model.add(LSTM(len(x_columns), input_shape=(x.shape[1], len(x_columns))))
+            model.add(LSTM(len(x_columns), input_shape=(
+                x.shape[1], len(x_columns))))
             model.add(Dense(int(self.dense)))
             model.compile(loss="mean_squared_error", optimizer="adam")
             model.load_weights(self.storage.storage["lstm_model"])
 
-            to_predict_data = input_data.loc[len(input_data) - 1 :][x_columns]
+            to_predict_data = input_data.loc[len(input_data) - 1:][x_columns]
             to_predict_data = np.array(to_predict_data)
             to_predict_data = to_predict_data.reshape(
                 (to_predict_data.shape[0], 1, to_predict_data.shape[1])
@@ -957,3 +978,56 @@ class LstmSignalGenerator(IndicatorBase):
             self.value = 0.0
 
 
+class RsiModel(IndicatorBase):
+    id = models.BigAutoField(primary_key=True)
+    price_id = models.ForeignKey(
+        Data, on_delete=models.CASCADE, related_name="rsi"
+    )
+    # parameters
+    period = models.IntegerField()
+    # values
+    value = models.FloatField()
+
+    parameters = [
+        "period",
+    ]
+    values_output = [
+        "value",
+    ]
+
+    class Meta:
+        unique_together = ("period", "price_id")
+
+    def get_gain_loss(price_data):
+
+        gains = []
+        losses = []
+        for price in price_data:
+            price_diff = price.close_bid - price.open_bid
+            if price_diff > 0 :
+                gains.append(price_diff)
+                losses.append(0)
+            else :
+                gains.append(0)
+                losses.append(price_diff)
+
+        return gains,losses
+
+
+    def calculate(self):
+
+        """
+
+        """
+
+        try:
+            price_data = self.get_price_data(self.period)
+            gains,losses=self.get_gain_loss(price_data)
+            avg_gain=sum(gains)/ len(gains)
+            avg_loss=sum(losses)/ len(losses)
+            rs=avg_gain/avg_loss
+            self.value = 100 - (100 / (1 + rs))
+            
+        except Exception as e:
+            print("RsiModel", e)
+            self.value = 0
