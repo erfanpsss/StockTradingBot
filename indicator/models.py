@@ -978,7 +978,7 @@ class LstmSignalGenerator(IndicatorBase):
             self.value = 0.0
 
 
-class RsiModel(IndicatorBase):
+class Rsi(IndicatorBase):
     id = models.BigAutoField(primary_key=True)
     price_id = models.ForeignKey(
         Data, on_delete=models.CASCADE, related_name="rsi"
@@ -1029,5 +1029,80 @@ class RsiModel(IndicatorBase):
             self.value = 100 - (100 / (1 + rs))
             
         except Exception as e:
-            print("RsiModel", e)
+            print("Rsi", e)
             self.value = 0
+
+
+
+
+
+
+
+
+class Divergence(IndicatorBase):
+    id = models.BigAutoField(primary_key=True)
+    price_id = models.ForeignKey(
+        Data, on_delete=models.CASCADE, related_name="divergence"
+    )
+    # parameters
+    period = models.IntegerField()
+    # values
+    value = models.FloatField()
+
+    parameters = [
+        "period",
+    ]
+    values_output = [
+        "value",
+    ]
+
+    class Meta:
+        unique_together = ("period", "price_id")
+
+    def get_slope(price_data , x_column_name, y_column_name):
+
+        data = pd.DataFrame(price_data)
+        x = data[x_column_name].values.reshape(-1, 1)
+        y = data[y_column_name]
+
+        model = LinearRegression()
+        model.fit(x, y)
+        data['regression'] = model.predict(data[y_column_name].values.reshape(-1, 1))
+        slope = (data.regression.iloc[-1] - data.regression.iloc[0]) / period
+        return slope
+
+    
+
+        
+
+
+    def calculate(self):
+
+        """
+
+        """
+
+        try:
+            self.value = 0
+            price_data = self.get_price_data(self.period).values('close_bid', 'datetime')
+            rsi_data = Rsi.objects.filter(
+                Q(price_id__symbol=self.price_id.symbol)
+                & Q(price_id__timeframe=self.price_id.timeframe)
+            ).order_by("-price_id__datetime")[: self.period].values('value', 'price_id__datetime')
+
+            slope_price=self.get_slope(price_data , 'datetime' , 'close_bid')
+            slope_rsi=self.get_slope(rsi_data, 'price_id__datetime' , 'value')
+
+            if slope_price > 0 and slope_rsi < 0:
+                self.value= -1
+
+            elif slope_price < 0 and slope_rsi > 0:
+                self.value= 1
+
+
+            
+        except Exception as e:
+            print("Divergence", e)
+            self.value = 0
+
+
