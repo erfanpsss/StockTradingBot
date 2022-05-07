@@ -4,6 +4,7 @@ from pyexpat import model
 from tabnanny import verbose
 from django.db import models
 from django.db.models import Q, F
+from matplotlib.pyplot import cla
 import pandas as pd
 import numpy as np
 import math
@@ -146,6 +147,20 @@ class Data(models.Model):
                 if conf not in indicators_configurations:
                     indicators_configurations.append(conf)
         return indicators_configurations
+
+    @classmethod
+    def last_close_price(cls, symbol, timeframe):
+        try:
+            return cls.objects.filter(symbol=symbol, timeframe=timeframe).order_by("datetime").last().close_bid
+        except:
+            return None
+
+    @classmethod
+    def last_open_price(cls, symbol, timeframe):
+        try:
+            return cls.objects.filter(symbol__name=symbol, timeframe__name=timeframe).order_by("datetime").last().open_bid
+        except:
+            return None
 
 
 class IbdData(models.Model):

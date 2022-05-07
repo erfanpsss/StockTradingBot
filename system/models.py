@@ -1,5 +1,6 @@
 from email.policy import default
 from django.db import models
+from account.models import Account
 from riskmanagement.models import RiskManagement
 from trademanagement.models import TradeManagement
 from strategy.models import Strategy
@@ -18,7 +19,12 @@ def default_symbol_timeframe_pair():
 class System(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.CharField(unique=True, max_length=200)
+    account = models.ForeignKey(
+        Account, on_delete=models.CASCADE, related_name="account_systems")
+
     is_active = models.BooleanField(default=False)
+    is_active_manual_trade_handling = models.BooleanField(default=True)
+    is_active_automatic_trade_handling = models.BooleanField(default=True)
     base_timeframe = models.ForeignKey(
         Timeframe, on_delete=models.SET_NULL, null=True, blank=True, related_name="system_timeframes")
     description = models.TextField(null=True, blank=True)
@@ -30,6 +36,7 @@ class System(models.Model):
         TradeManagement, on_delete=models.SET_NULL, null=True, blank=True, related_name="system_trade_managements")
     strategy = models.ForeignKey(
         Strategy, on_delete=models.SET_NULL, null=True, blank=True, related_name="system_strategies")
+
     symbol_timeframe_pair = models.JSONField(default=dict)
     configurations = models.JSONField(default=dict)
     storage = models.JSONField(default=dict)

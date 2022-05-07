@@ -1,10 +1,12 @@
 import importlib
 import math
+from operator import mod
 import pickle
 from django.core.management import call_command
 import numpy as np
 import pandas as pd
 import tensorflow as tf
+from account.models import Account
 from data.models import Data
 from django.conf import settings
 from django.db import models
@@ -55,6 +57,8 @@ class Strategy(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=50, unique=True)
     is_active = models.BooleanField(default=False)
+    account = models.ForeignKey(
+        Account, on_delete=models.CASCADE, related_name="account_strategies")
     description = models.TextField(null=True, blank=True)
     indicators_configuration = models.JSONField(
         default=default_indicators_configuration
@@ -66,8 +70,8 @@ class Strategy(models.Model):
     strategy = None
 
     class Meta:
-        verbose_name = "Trading System"
-        verbose_name_plural = "Trading Systems"
+        verbose_name = "Strategy"
+        verbose_name_plural = "Strategies"
 
     @classmethod
     def get_available_indicator_configuration(cls):

@@ -20,6 +20,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 env = environ.Env()
 env.read_env(os.path.join(BASE_DIR, ".env"))
 
+AUTH_USER_MODEL = "account.Account"
+
 PYTHON_EXE = env("PYTHON_EXE")
 SERVER_PORT = env("SERVER_PORT")
 FINVIZ_USERNAME = env("FINVIZ_USERNAME")
@@ -43,6 +45,7 @@ GIT_BRANCH_NAME = env("GIT_BRANCH_NAME")
 # Application definition
 
 INSTALLED_APPS = [
+    'account',
     'trade',
     'data',
     'provider',

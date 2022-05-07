@@ -1,3 +1,10 @@
 from django.contrib import admin
 
-# Register your models here.
+from .models import TradeManagement
+
+
+class AdminTradeManagement(admin.ModelAdmin):
+    pass
+
+
+admin.site.register(TradeManagement, AdminTradeManagement)

@@ -1,6 +1,8 @@
 from django.db import models
 import importlib
 
+from account.models import Account
+
 
 def default_indicators_configuration():
     return [
@@ -13,6 +15,9 @@ class TradeManagement(models.Model):
     trade_management_choices = (("SampleTradeManagement", "SampleTradeManagement"),
                                 ("Alpha", "Alpha"))
     id = models.AutoField(primary_key=True)
+    account = models.ForeignKey(
+        Account, on_delete=models.CASCADE, related_name="account_trademanagements")
+
     name = models.CharField(unique=True, max_length=200)
     is_active = models.BooleanField(default=False)
     description = models.TextField(null=True, blank=True)
@@ -56,14 +61,29 @@ class TradeManagement(models.Model):
                     indicators_configurations.append(conf)
         return indicators_configurations
 
-    def init(self):
+    def add_or_update_storage(self, key, value):
+        current_storage = self.storage
+        current_storage.update({key: value})
+        self.storage = current_storage
+        self.save(update_fields=["storage"])
+
+    def remove_storage(self, key):
+        try:
+            current_storage = self.storage
+            current_storage.pop(key)
+            self.storage = current_storage
+            self.save(update_fields=["storage"])
+        except KeyError:
+            pass
+
+    def init(self, system):
         module = importlib.import_module("trademanagement.trade_management")
         trade_management_class = getattr(module, self.trade_management_class)
-        conf = {"trade_management": self}
+        conf = {"trade_management": self, "system": system}
         self.trade_management: "TradeManagement" = trade_management_class(
             **conf)
 
-    def run(self):
-        self.init()
+    def run(self, system):
+        self.init(system)
         self.trade_management.setup()
         return self.trade_management.run()

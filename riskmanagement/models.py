@@ -1,6 +1,8 @@
 from django.db import models
 import importlib
 
+from account.models import Account
+
 
 def default_indicators_configuration():
     return [
@@ -13,6 +15,9 @@ class RiskManagement(models.Model):
     risk_management_choices = (("SampleRiskManagement", "SampleRiskManagement"),
                                ("Alpha", "Alpha"))
     id = models.AutoField(primary_key=True)
+    account = models.ForeignKey(
+        Account, on_delete=models.CASCADE, related_name="account_riskmanagements")
+
     name = models.CharField(unique=True, max_length=200)
     is_active = models.BooleanField(default=False)
     description = models.TextField(null=True, blank=True)
@@ -59,13 +64,17 @@ class RiskManagement(models.Model):
                     indicators_configurations.append(conf)
         return indicators_configurations
 
-    def init(self):
+    def init(self, system):
         module = importlib.import_module("riskmanagement.risk_management")
         risk_management_class = getattr(module, self.risk_management_class)
-        conf = {"risk_management": self}
+        conf = {"risk_management": self, "system": system}
         self.risk_management: "RiskManagement" = risk_management_class(**conf)
 
-    def run(self, entry_price: float, *args, **kwargs):
-        self.init()
+    def run(self, trades: list, system, *args, **kwargs):
+        self.init(system)
         self.risk_management.setup()
-        return self.risk_management.run(entry_price, *args, **kwargs)
+        prepared_trades = []
+        for trade in trades:
+            prepared_trades.append(
+                self.risk_management.run(trade, *args, **kwargs))
+        return prepared_trades

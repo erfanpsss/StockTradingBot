@@ -1,4 +1,5 @@
 from django.db import models
+from account.models import Account
 from data.models import Symbol
 from util.models_choices import *
 from broker.models import Broker
@@ -10,6 +11,9 @@ from system.models import System
 
 class Trade(models.Model):
     id = models.AutoField(primary_key=True)
+    account = models.ForeignKey(
+        Account, on_delete=models.CASCADE, related_name="account_trades")
+
     place_now = models.BooleanField(default=True)
     status = models.CharField(max_length=50, choices=TRADE_STATUS_CHOICES,
                               default=TradeStatusList.PENDING_SUBMIT.value)
@@ -28,6 +32,8 @@ class Trade(models.Model):
     trade_price = models.FloatField(blank=True, null=True)
     trade_size = models.FloatField(blank=True, null=True)
     quantity = models.FloatField(blank=True, null=True)
+    main_quanity = models.FloatField(blank=True, null=True)
+    filled_quantity = models.FloatField(blank=True, null=True)
     trade_stop_loss = models.FloatField(blank=True, null=True)
     trade_limit = models.FloatField(blank=True, null=True)
     parent_trade = models.ForeignKey(
@@ -35,6 +41,8 @@ class Trade(models.Model):
     executor = models.ForeignKey(
         System, on_delete=models.DO_NOTHING, related_name="system_trades", null=True, blank=True)
     is_executed = models.BooleanField(default=False)
+    closed_quantity = models.FloatField(blank=True, null=True, default=0.0)
+
     sent_arguments = models.JSONField(default=dict, blank=True, null=True)
     error = models.TextField(blank=True, null=True)
 
