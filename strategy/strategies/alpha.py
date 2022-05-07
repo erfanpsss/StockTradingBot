@@ -9,8 +9,6 @@ from indicator.models import Atr
 class Alpha(StrategyBase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.risk_percent = self.strategy.strategy_configuration.get(
-            "risk_percent")
 
     def setup(self):
         super().setup()

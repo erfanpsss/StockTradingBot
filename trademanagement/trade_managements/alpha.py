@@ -110,12 +110,21 @@ class Alpha(TradeManagementBase):
             key=self.STORAGE_TRADE_KEY, value=trade_storage_info)
         return trade_obj
 
-    def exit_trade_check_condition_handler(self, trade):
-        last_close_price = self.get_current_price(trade.symbol)
-        if trade.position_type == PositionType.BUY.value:
-            if last_close_price > (trade.trade_price + trade.trade_price * (20/100)):
+    def exit_condition_1(self, trade_obj):
+        last_close_price = self.get_current_price(trade_obj.symbol)
+        if trade_obj.position_type == PositionType.BUY.value:
+            if last_close_price > (trade_obj.trade_price + trade_obj.trade_price * (20/100)):
                 return True
         return False
+
+    def exit_trade_check_condition_handler(self, trade):
+        condition_methods = [
+            self.exit_condition_1,
+        ]
+        for condition_method in condition_methods:
+            if not condition_method(trade):
+                return False
+        return True
 
     def prepare_exit_trade_handler(self, trade):
         last_close_price = self.get_current_price(trade.symbol)

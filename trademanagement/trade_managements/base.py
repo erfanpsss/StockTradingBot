@@ -131,6 +131,8 @@ class TradeManagementBase:
     def create_trade_obj_handler(self, trade):
         if trade.get("pk"):
             trade_obj = Trade.objects.get(pk=trade.get("pk"))
+            trade_obj.price = Data.last_close_price(
+                symbol, self.system.timeframe)
             trade_obj.trade_stop_loss = trade.get("trade_stop_loss"),
             trade_obj.trade_limit = trade.get("trade_limit"),
             trade_obj.trade_size = trade.get("trade_size"),
@@ -144,10 +146,12 @@ class TradeManagementBase:
             trade_obj.save(
                 update_fields=["trade_stop_loss", "trade_limit", "trade_size", "quantity"])
         else:
+            symbol = Symbol.objects.get(name=trade.get("symbol_name"))
             trade_obj = Trade.objects.create(
                 order_type=trade.get("order_type"),
                 account=self.system.account,
-                symbol=Symbol.objects.get(name=trade.get("symbol_name")),
+                price=Data.last_close_price(symbol, self.system.timeframe),
+                symbol=symbol,
                 trade_price=trade.get("trade_price"),
                 trade_stop_loss=trade.get("trade_stop_loss"),
                 trade_limit=trade.get("trade_limit"),

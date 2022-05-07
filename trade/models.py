@@ -1,6 +1,6 @@
 from django.db import models
 from account.models import Account
-from data.models import Symbol
+from data.models import Data, Symbol
 from util.models_choices import *
 from broker.models import Broker
 import datetime
@@ -13,7 +13,8 @@ class Trade(models.Model):
     id = models.AutoField(primary_key=True)
     account = models.ForeignKey(
         Account, on_delete=models.CASCADE, related_name="account_trades")
-
+    price_data = models.ForeignKey(
+        Data, on_delete=models.SET_NULL, null=True, blank=True)
     place_now = models.BooleanField(default=True)
     status = models.CharField(max_length=50, choices=TRADE_STATUS_CHOICES,
                               default=TradeStatusList.PENDING_SUBMIT.value)
