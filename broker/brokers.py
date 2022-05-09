@@ -21,14 +21,13 @@ class BrokerEngine:
         self.account_id = account_id
         self.broker = broker
         self.args = args
-        self.kwargs = kwargs        
+        self.kwargs = kwargs
         self.broker_processor = self.get_broker_processor()
 
     def get_broker_processor(self) -> "BrokerProcessor":
         module = importlib.import_module("broker.brokers")
         broker_processor: BrokerProcessor = getattr(module, self.broker)
         return broker_processor(self.is_sandbox, self.public_key, self.secret_key, self.account_id, self.args, self.kwargs)
-
 
 
 class BrokerProcessor(ABC):
@@ -86,6 +85,7 @@ class BrokerProcessor(ABC):
     def order_status(self, *args, **kwargs):
         pass
 
+
 class InteractiveBrokers(BrokerProcessor):
     BASE_URL = "http://localhost:5000/v1/api/"
     SSO_VALIDATE_URL = "sso/validate"
@@ -95,6 +95,7 @@ class InteractiveBrokers(BrokerProcessor):
     AUTH_STATUS_URL = "iserver/auth/status"
     REAUTH_URL = "iserver/reauthenticate"
     SYMBOL_INFO_URL = "iserver/secdef/search"
+    PORTFOLIO_POSITIONS = "portfolio/{account_id}/positions/{page_id}"
     PLACE_ORDER_URL = "iserver/account/{account_id}/orders"
     LIST_ORDERS_URL = "iserver/account/orders"
     CANCEL_ORDER_URL = "iserver/account/{account_id}/order/{order_id}"
@@ -109,23 +110,23 @@ class InteractiveBrokers(BrokerProcessor):
         "Filled": TradeStatusList.FILLED.value,
         "Inactive": TradeStatusList.INACTIVE.value,
     }
-    
+
     WAIT_AFTER_REAUTH = 10
     MAX_REAUTH_RETRY = 10
 
-    def broker_auth_request(self, method, url, headers = None, data = None):
-        headers={"Content-Type": "application/json"}
+    def broker_auth_request(self, method, url, headers=None, data=None):
+        headers = {"Content-Type": "application/json"}
         if method.lower() == "post":
             return json.loads(requests.post(self.BASE_URL + url, data=json.dumps(data), headers=headers).content)
         if method.lower() == "delete":
             return json.loads(requests.delete(self.BASE_URL + url, headers=headers).content)
         return json.loads(requests.get(self.BASE_URL + url, headers=headers).content)
 
-
-    def broker_request(self, method, url, headers = None, data = None):
-        headers={"Content-Type": "application/json"}
+    def broker_request(self, method, url, headers=None, data=None):
+        headers = {"Content-Type": "application/json"}
         if method.lower() == "post":
-            res = requests.post(self.BASE_URL + url, data=json.dumps(data), headers=headers).content
+            res = requests.post(self.BASE_URL + url,
+                                data=json.dumps(data), headers=headers).content
             return json.loads(res)
         if method.lower() == "delete":
             res = requests.delete(self.BASE_URL + url, headers=headers).content
@@ -152,8 +153,8 @@ class InteractiveBrokers(BrokerProcessor):
             "symbol": symbol_name,
             "name": True,
             "secType": "STK"
-        }  
-        return self.broker_request("post", self.SYMBOL_INFO_URL, data = payload) 
+        }
+        return self.broker_request("post", self.SYMBOL_INFO_URL, data=payload)
 
     def get_symbol_conid(self, symbol_name):
         return self.get_symbol_info(symbol_name)[0].get("conid")
@@ -170,7 +171,7 @@ class InteractiveBrokers(BrokerProcessor):
         return False
 
     def _account_info(self):
-        return self.broker_request("get", self.ACCOUNT_INFO_URL) 
+        return self.broker_request("get", self.ACCOUNT_INFO_URL)
 
     @property
     def account_info(self):
@@ -179,17 +180,17 @@ class InteractiveBrokers(BrokerProcessor):
         account_info.update(balance_info)
         account_info.update(
             {
-                "balance": account_info.get("availablefunds", {}).get("amount", ""), 
-                "equity": account_info.get("availablefunds", {}).get("amount", ""), 
+                "balance": account_info.get("availablefunds", {}).get("amount", ""),
+                "equity": account_info.get("availablefunds", {}).get("amount", ""),
                 "buying_power": account_info.get("buyingpower", {}).get("amount", "")
             }
         )
         return account_info
 
     def account_balance_info(self):
-        info = self.broker_request("get", self.ACCOUNT_BALANCE_INFO_URL.format(account_id = self.account_id))
+        info = self.broker_request(
+            "get", self.ACCOUNT_BALANCE_INFO_URL.format(account_id=self.account_id))
         return info
-
 
     @property
     def balance(self):
@@ -208,7 +209,7 @@ class InteractiveBrokers(BrokerProcessor):
 
         Returns:
             dict: the returned format:
-            
+
                 [{"order_id":"1798885536","local_order_id":"test_1","order_status":"PendingSubmit","encrypt_message":"1"}]
         """
         payload = {
@@ -241,13 +242,13 @@ class InteractiveBrokers(BrokerProcessor):
                 },
             ],
         }
-        return self.broker_request("post", self.PLACE_ORDER_URL.format(account_id = self.account_id), data=payload)
+        return self.broker_request("post", self.PLACE_ORDER_URL.format(account_id=self.account_id), data=payload)
 
     def reply_place_order(self, reply_id):
         payload = {
             "confirmed": True
         }
-        return self.broker_request("post", self.PLACE_ORDER_REPLY_URL.format(reply_id = reply_id), data=payload)
+        return self.broker_request("post", self.PLACE_ORDER_REPLY_URL.format(reply_id=reply_id), data=payload)
 
     def open_position(self, *args, **kwargs):
         print("Opening trade...")
@@ -259,8 +260,8 @@ class InteractiveBrokers(BrokerProcessor):
         return position.get("order_id"), self.ORDER_STATUS_MAP.get(position.get("order_status"))
 
     def cancel_order(self, *args, **kwargs):
-        return self.broker_request("delete", self.CANCEL_ORDER_URL.format(account_id = self.account_id, order_id = kwargs.get("order_id")))
-        
+        return self.broker_request("delete", self.CANCEL_ORDER_URL.format(account_id=self.account_id, order_id=kwargs.get("order_id")))
+
     def _positions(self, *args, **kwargs):
         """Return orders
 
@@ -278,7 +279,8 @@ class InteractiveBrokers(BrokerProcessor):
         return self.broker_request("get", self.LIST_ORDERS_URL)
 
     def positions(self, *args, **kwargs):
-        positions = self.broker_request("get", self.LIST_ORDERS_URL).get("orders")
+        positions = self.broker_request(
+            "get", self.LIST_ORDERS_URL).get("orders")
         data = []
         for position in positions:
             data.append({
@@ -290,7 +292,7 @@ class InteractiveBrokers(BrokerProcessor):
         return data
 
     def _order_status(self, *args, **kwargs):
-        return self.broker_request("get", self.ORDER_STATUS_URL.format(order_id = kwargs.get("order_id")))
+        return self.broker_request("get", self.ORDER_STATUS_URL.format(order_id=kwargs.get("order_id")))
 
     def order_status(self, *args, **kwargs):
         """Return order status
@@ -305,7 +307,7 @@ class InteractiveBrokers(BrokerProcessor):
                 Filled: Indicates that the order has been completely filled.
                 Inactive: Indicates the order is not working, for instance if the order was invalid and triggered an error message,
         """
-        
+
         return self._order_status(*args, **kwargs).get("order_status")
 
     def close_position(self, *args, **kwargs):
@@ -316,7 +318,6 @@ class InteractiveBrokers(BrokerProcessor):
             kwargs["quantity"] = order_status.get("total_size")
             return self.open_position(*args, **kwargs)
         return self.cancel_order(*args, **kwargs)
-            
 
     def get_data(self, *args, **kwargs):
         pass
@@ -328,11 +329,10 @@ class InteractiveBrokers(BrokerProcessor):
         pass
 
 
-
 class FakeBroker(BrokerProcessor):
     ACCOUNT_INFO_FILE_NAME: str = "fake_broke_account_info.csv"
     INITIAL_BALANCE: float = 1000.0
-    
+
     def __init__(self, is_sandbox, public_key, secret_key, *args, **kwargs):
         super().__init__(is_sandbox, public_key, secret_key, *args, **kwargs)
         self.intial_balance = kwargs.get("balance") or self.INITIAL_BALANCE
@@ -364,7 +364,7 @@ class FakeBroker(BrokerProcessor):
     @property
     def used_margin(self) -> float:
         return self.account_info.get("used_margin")
-    
+
     def open_position(self, *args, **kwargs):
         position_size: float = kwargs.get("position_size")
         position_stop_loss: float = kwargs.get("stop_loss")

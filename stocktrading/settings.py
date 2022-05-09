@@ -20,6 +20,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 env = environ.Env()
 env.read_env(os.path.join(BASE_DIR, ".env"))
 
+AUTH_USER_MODEL = "account.Account"
+
 PYTHON_EXE = env("PYTHON_EXE")
 SERVER_PORT = env("SERVER_PORT")
 FINVIZ_USERNAME = env("FINVIZ_USERNAME")
@@ -43,6 +45,7 @@ GIT_BRANCH_NAME = env("GIT_BRANCH_NAME")
 # Application definition
 
 INSTALLED_APPS = [
+    'account',
     'trade',
     'data',
     'provider',
@@ -50,6 +53,9 @@ INSTALLED_APPS = [
     'indicator',
     'strategy',
     'runner',
+    'system',
+    'riskmanagement',
+    'trademanagement',
     'setting',
     'rangefilter',
     'import_export',
@@ -145,8 +151,8 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 MEDIA_URL = 'media/'
-MEDIA_ROOT =  os.path.join(BASE_DIR, 'media')
-STATIC_ROOT =  os.path.join(BASE_DIR, 'static')
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
