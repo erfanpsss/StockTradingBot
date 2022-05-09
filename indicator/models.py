@@ -43,6 +43,8 @@ INDICATORS_LIST = (
     ("RelativeGrowthBasedPrice", "RelativeGrowthBasedPrice"),
     ("RelativeWickGrowthBasedPrice", "RelativeWickGrowthBasedPrice"),
     ("LstmSignalGenerator", "LstmSignalGenerator"),
+    ("Rsi", "Rsi"),
+    ("Divergence", "Divergence"),
 )
 
 
@@ -50,6 +52,7 @@ class IndicatorStorage(models.Model):
     id = models.AutoField(primary_key=True)
     indicator = models.TextField(unique=True)
     storage = models.JSONField(null=True, blank=True, default=dict)
+
     class Meta:
         verbose_name = "Indicator storage"
         verbose_name_plural = "Indicator storages"
@@ -92,6 +95,14 @@ class IndicatorBase(models.Model):
 
             except Exception as e:
                 pass
+
+    def get_subindicator_parameters(self, indicator_name, order=1):
+        indicators_parameters = []
+        for counter, indicator in enumerate(self.sub_indicator_configuration):
+            if self.sub_indicator_configuration[counter].get('class') == indicator_name:
+                indicators_parameters.append(
+                    self.sub_indicator_configuration[counter].get('args'))
+        return indicators_parameters[order - 1]
 
     @property
     def sub_indicators_dict_queryset(self) -> dict:
@@ -142,7 +153,8 @@ class IndicatorBase(models.Model):
                     temp_value = temp_value.exclude(**{val: None}).exclude(
                         **{val: decimal.Decimal("NaN")}
                     )
-                dict_queryset[indicator] = temp_value.order_by("price_id__datetime")
+                dict_queryset[indicator] = temp_value.order_by(
+                    "price_id__datetime")
 
             except Exception as e:
                 print("sub_indicators_dict_sorted_queryset", e)
@@ -159,15 +171,24 @@ class IndicatorBase(models.Model):
         )
         return value
 
-
     @property
     def previous_value(self):
         return self.previous_obj.value if self.previous_obj.value else None
 
+    def get_price_data(self, period):
+
+        price_data = Data.objects.filter(
+            Q(symbol=self.price_id.symbol)
+            & Q(timeframe=self.price_id.timeframe)
+        ).order_by("-datetime")[: self.period]
+
+        return price_data
+
     @property
     def indicator_config_name(self):
         args_str = str(
-            {str(key): str(value) for key, value in self.get_parameters_value().items()}
+            {str(key): str(value)
+             for key, value in self.get_parameters_value().items()}
         )
         whole_name = f"{self.__class__.__name__}{args_str}"
         name = (
@@ -350,7 +371,8 @@ class Atr(IndicatorBase):
                 (self.price_id.high_bid - self.price_id.previous_value),
                 (self.price_id.low_bid - self.price_id.previous_value),
             )
-            self.value = ((self.previous_value * (self.period - 1)) + tr) / self.period
+            self.value = (
+                (self.previous_value * (self.period - 1)) + tr) / self.period
         except Exception as e:
             print("Atr", e)
             self.value = 0.0
@@ -370,7 +392,8 @@ class Macd(IndicatorBase):
     signal = models.FloatField()
 
     class Meta:
-        unique_together = ("price_id", "long_period", "short_period", "signal_period")
+        unique_together = ("price_id", "long_period",
+                           "short_period", "signal_period")
 
     def calculate(self):
         """
@@ -843,7 +866,7 @@ class LstmSignalGenerator(IndicatorBase):
                     if col == self.output_column_name:
                         input_data[col + "_next"] = input_data[col].shift(-1)
 
-        return input_data[int(self.lag) + 1 :], x_columns
+        return input_data[int(self.lag) + 1:], x_columns
 
     @property
     def storage_initial(self):
@@ -880,7 +903,8 @@ class LstmSignalGenerator(IndicatorBase):
                     input_shape=(x.shape[1], len(x_columns)),
                 )
             )
-            model.add(LSTM(len(x_columns), input_shape=(x.shape[1], len(x_columns))))
+            model.add(LSTM(len(x_columns), input_shape=(
+                x.shape[1], len(x_columns))))
             model.add(Dense(int(self.dense)))
             model.compile(loss="mean_squared_error", optimizer="adam")
             model.fit(
@@ -932,12 +956,13 @@ class LstmSignalGenerator(IndicatorBase):
                     input_shape=(x.shape[1], len(x_columns)),
                 )
             )
-            model.add(LSTM(len(x_columns), input_shape=(x.shape[1], len(x_columns))))
+            model.add(LSTM(len(x_columns), input_shape=(
+                x.shape[1], len(x_columns))))
             model.add(Dense(int(self.dense)))
             model.compile(loss="mean_squared_error", optimizer="adam")
             model.load_weights(self.storage.storage["lstm_model"])
 
-            to_predict_data = input_data.loc[len(input_data) - 1 :][x_columns]
+            to_predict_data = input_data.loc[len(input_data) - 1:][x_columns]
             to_predict_data = np.array(to_predict_data)
             to_predict_data = to_predict_data.reshape(
                 (to_predict_data.shape[0], 1, to_predict_data.shape[1])
@@ -957,3 +982,160 @@ class LstmSignalGenerator(IndicatorBase):
             self.value = 0.0
 
 
+class Rsi(IndicatorBase):
+    id = models.BigAutoField(primary_key=True)
+    price_id = models.ForeignKey(
+        Data, on_delete=models.CASCADE, related_name="rsi"
+    )
+    # parameters
+    period = models.IntegerField()
+    # values
+    value = models.FloatField()
+    avg_gain = models.FloatField()
+    avg_loss = models.FloatField()
+
+    parameters = [
+        "period",
+    ]
+    values_output = [
+        "value",
+        "avg_gain",
+        "avg_loss",
+    ]
+
+    class Meta:
+        unique_together = ("period", "price_id")
+
+    def get_gain_loss(self, price_data):
+
+        gains = []
+        losses = []
+        for price in price_data:
+            price_diff = price.price - price.previous_value
+            if price_diff > 0:
+                gains.append(price_diff)
+                losses.append(0)
+            else:
+                gains.append(0)
+                losses.append(price_diff)
+
+        return gains, losses
+
+    def calculate(self):
+        """
+
+        """
+
+        try:
+            if Rsi.objects.filter(period=self.period, price_id__symbol=self.price_id.symbol, price_id__timeframe=self.price_id.timeframe).count() < self.period+1:
+
+                price_data = self.get_price_data(self.period)
+                gains, losses = self.get_gain_loss(price_data)
+                self.avg_gain = sum(gains) / len(gains)
+                self.avg_loss = sum(losses) / len(losses)
+                rs = self.avg_gain/self.avg_loss
+                self.value = 100 - (100 / (1 + rs))
+
+            else:
+                price_data = self.get_price_data(self.period)
+                current_gain = price_data[self.period -
+                    1].price - price_data[self.period - 2].price
+                current_loss = 0
+                if current_gain < 0:
+                    current_loss = abs(current_gain)
+                    current_gain = 0
+                gains, losses = self.get_gain_loss(price_data)
+                self.avg_gain = sum(gains) / len(gains)
+                self.avg_loss = sum(losses) / len(losses)
+                rs = self.avg_gain/self.avg_loss
+                self.value = 100 - (100 / 1+((self.previous_obj.avg_gain * self.priod-1 + current_gain) / (self.previous_obj.avg_loss * self.priod-1 + current_loss)))
+
+
+        except Exception as e:
+            print("Rsi", e)
+            self.value=0
+
+
+class Divergence(IndicatorBase):
+
+    id=models.BigAutoField(primary_key=True)
+    price_id=models.ForeignKey(
+        Data, on_delete=models.CASCADE, related_name="divergence"
+    )
+    # parameters
+    period=models.IntegerField()
+    # values
+    value=models.FloatField()
+    slope_price=models.FloatField()
+    slope_rsi=models.FloatField()
+
+    parameters=[
+        "period",
+    ]
+
+    values_output=[
+        "value",
+        "slope_price",
+        "slope_rsi",
+    ]
+
+
+    class Meta:
+        unique_together=("period", "price_id")
+
+    def get_slope(self, price_data, x_column_name, y_column_name):
+
+        data=pd.DataFrame(price_data)
+        x=data[x_column_name].values.reshape(-1, 1)
+        y=data[y_column_name]
+
+        model=LinearRegression()
+        model.fit(x, y)
+        data['regression']=model.predict(
+            data[y_column_name].values.reshape(-1, 1))
+        slope=(data.regression.iloc[-1] - \
+            data.regression.iloc[0]) / self.period
+        return slope
+
+
+
+
+
+
+
+    def calculate(self):
+
+        """
+
+        """
+
+        try:
+            print(self.get_subindicator_parameters("Rsi").get('period'))
+            self.value=0
+            self.slope_price=0
+            self.slope_rsi=0
+            price_data=self.get_price_data(
+                self.period).values('close_bid', 'datetime')
+            rsi_data=Rsi.objects.filter(
+                Q(price_id__symbol=self.price_id.symbol)
+                & Q(price_id__timeframe=self.price_id.timeframe)
+                & Q(period=self.get_subindicator_parameters("Rsi").get('period'))
+            ).order_by("-price_id__datetime")[: self.period].values('value', 'price_id__datetime')
+
+            slope_price=self.get_slope(price_data, 'datetime', 'close_bid')
+            slope_rsi=self.get_slope(rsi_data, 'price_id__datetime', 'value')
+
+            if slope_price > 0 and slope_rsi < 0:
+                self.value=-1
+
+            elif slope_price < 0 and slope_rsi > 0:
+                self.value=1
+
+            self.slope_price=slope_price
+            self.slope_rsi=slope_rsi
+
+
+
+        except Exception as e:
+            print("Divergence", e)
+            self.value=0

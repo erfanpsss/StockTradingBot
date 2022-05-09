@@ -40,14 +40,12 @@ from broker.models import Broker
 def default_indicators_configuration():
     return [
         {"class": "MovingAverage", "args": {"period": 10}},
-        {"class": "ExponentialMovingAverage", "args": {"period": 10}},
     ]
 
 
 def default_symbol_timeframe_pair():
     return [
-        {"AAPL": ["1m", "5m"]},
-        {"AUDUSD": ["1d", "1h"]},
+        {"AAPL": ["1h"]},
     ]
 
 

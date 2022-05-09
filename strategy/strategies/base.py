@@ -10,9 +10,9 @@ class StrategyBase:
                                            ] = parameter["args"]
 
     def setup(self):
-        if not self.strategy.storage:
-            self.strategy.storage = {}
-            self.strategy.save()
+        if not self.strategy.strategy_storage:
+            self.strategy.strategy_storage = {}
+            self.strategy.save(update_fields=['strategy_storage'])
 
     def run(self):
         pass
