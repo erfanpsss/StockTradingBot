@@ -91,7 +91,8 @@ class Alpha(TradeManagementBase):
             "main_quantity": trade.quantity * diff_ratio,
             "parent_trade": trade,
             "timeframe": trade.timeframe,
-            "position_type": TradeType.BUY.value if trade.position_type == TradeType.BUY.value else TradeType.SELL.value,
+            "trade_type": TradeType.CLOSE.value,
+            "position_type": PositionType.BUY.value if trade.position_type == PositionType.BUY.value else PositionType.SELL.value,
         }
 
     def discover_complementary_trade(self):
