@@ -11,7 +11,7 @@ class StrategyBase:
     def setup(self):
         if not self.strategy.strategy_storage:
             self.strategy.strategy_storage = {}
-            self.strategy.save()
+            self.strategy.save(update_fields=['strategy_storage'])
 
 
     def run(self):
