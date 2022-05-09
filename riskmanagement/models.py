@@ -75,6 +75,8 @@ class RiskManagement(models.Model):
         self.risk_management.setup()
         prepared_trades = []
         for trade in trades:
-            prepared_trades.append(
-                self.risk_management.run(trade, *args, **kwargs))
+            prepared_trade = self.risk_management.run(trade, *args, **kwargs)
+            if not prepared_trade:
+                continue
+            prepared_trades.append(prepared_trade)
         return prepared_trades
