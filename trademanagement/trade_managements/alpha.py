@@ -83,15 +83,15 @@ class Alpha(TradeManagementBase):
         return {
             "symbol_name": trade.symbol.name,
             "trade_price": current_price,
-            "trade_stop_loss": trade.trade_stop_loss + price_diff if trade.trade_stop_loss else None,
-            "trade_limit": trade.trade_limit + price_diff if trade.trade_limit else None,
+            "trade_stop_loss": None,
+            "trade_limit": None,
             "order_type": trade.order_type,
             "trade_size": trade.trade_size * diff_ratio,
             "quantity": trade.quantity * diff_ratio,
             "main_quantity": trade.quantity * diff_ratio,
             "parent_trade": trade,
             "timeframe": trade.timeframe,
-            "position_type": trade.position_type,
+            "position_type": TradeType.BUY.value if trade.position_type == TradeType.BUY.value else TradeType.SELL.value,
         }
 
     def discover_complementary_trade(self):
