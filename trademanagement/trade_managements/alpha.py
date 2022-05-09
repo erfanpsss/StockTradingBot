@@ -10,6 +10,7 @@ from data.models import Data
 
 class Alpha(TradeManagementBase):
     STORAGE_TRADE_KEY = "trades"
+    STORAGE_EXIT_KEY = "exits"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -18,15 +19,18 @@ class Alpha(TradeManagementBase):
             "number_of_entries_per_decision", 1)
 
         self.entries_configuration = self.trade_management.trade_management_configuration.get(
-            "entries_configuration", {"1": {"allocation": 0.50}, "2": {"allocation": 0.50}})
+            "entries_configuration", {"1": {"allocation": 0.50, "profit_trigger": 1}, "2": {"allocation": 0.50, "profit_trigger": 0.2}})
 
         self.exits_configuration = self.trade_management.trade_management_configuration.get(
-            "exits_configuration", {"1": {"allocation": 0.50}, "2": {"allocation": 0.50}})
+            "exits_configuration", {"1": {"allocation": 0.50, "limit_trigger": 1}, "2": {"allocation": 0.50, "limit_trigger": 1}})
 
     def setup(self):
         super().setup()
         if not self.trade_management.storage.get(self.STORAGE_TRADE_KEY):
             self.trade_management.storage = {self.STORAGE_TRADE_KEY: {}}
+            self.trade_management.save(update_fields=["storage"])
+        if not self.trade_management.storage.get(self.STORAGE_EXIT_KEY):
+            self.trade_management.storage = {self.STORAGE_EXIT_KEY: {}}
             self.trade_management.save(update_fields=["storage"])
 
     def get_entry_configurations(self):
@@ -35,15 +39,18 @@ class Alpha(TradeManagementBase):
     def get_exit_configurations(self):
         return dict(sorted(self.exits_configuration.items(), key=lambda x: int(x[0])))
 
-    def entry_condition_1(self, parent_trade_obj):
-        return True
+    def entry_condition_1(self, parent_trade_obj, number):
+        if parent_trade_obj.position_type == PositionType.BUY.value:
+            return Data.last_close_price(parent_trade_obj.symbol, self.system.timeframe) > parent_trade_obj.trade_price + (parent_trade_obj.trade_price * self.get_entry_configurations().get(number).get("profit_trigger"))
+        if parent_trade_obj.position_type == PositionType.SELL.value:
+            return Data.last_close_price(parent_trade_obj.symbol, self.system.timeframe) < parent_trade_obj.trade_price - (parent_trade_obj.trade_price * self.get_entry_configurations().get(number).get("limit_trigger"))
 
-    def check_entry_condition(self, parent_trade_obj):
+    def check_entry_condition(self, parent_trade_obj, number):
         condition_methods = [
             self.entry_condition_1,
         ]
         for condition_method in condition_methods:
-            if not condition_method(parent_trade_obj):
+            if not condition_method(parent_trade_obj, number):
                 return False
         return True
 
@@ -67,14 +74,35 @@ class Alpha(TradeManagementBase):
             "position_type": trade.position_type,
         }
 
+    def recalibrate_exit(self, trade, number):
+        current_price = self.get_current_price(trade.symbol)
+        price_diff = current_price - trade.trade_price
+        configured_allocation = self.get_entry_configurations().get(number).get("allocation")
+        parent_allocation = self.get_entry_configurations().get("1").get("allocation")
+        diff_ratio = configured_allocation / parent_allocation
+        return {
+            "symbol_name": trade.symbol.name,
+            "trade_price": current_price,
+            "trade_stop_loss": trade.trade_stop_loss + price_diff if trade.trade_stop_loss else None,
+            "trade_limit": trade.trade_limit + price_diff if trade.trade_limit else None,
+            "order_type": trade.order_type,
+            "trade_size": trade.trade_size * diff_ratio,
+            "quantity": trade.quantity * diff_ratio,
+            "main_quantity": trade.quantity * diff_ratio,
+            "parent_trade": trade,
+            "timeframe": trade.timeframe,
+            "position_type": trade.position_type,
+        }
+
     def discover_complementary_trade(self):
 
         for key, value in self.trade_management.storage.get(self.STORAGE_TRADE_KEY).items():
             parent_trade_obj = Trade.objects.get(pk=key)
-            if len(value) < len(self.entries_configuration) and self.check_entry_condition(parent_trade_obj):
+            if len(value) < len(self.entries_configuration) and self.check_entry_condition(parent_trade_obj, len(value)):
                 trade_data = self.recalibrate_trade(
                     parent_trade_obj, len(value))
                 self.complementary_trades.append(trade_data)
+                break
 
     def extra_logic_handler(self):
         self.discover_complementary_trade()
@@ -106,16 +134,19 @@ class Alpha(TradeManagementBase):
         else:
             key = str(trade_obj.pk)
         trade_storage_info = {key: trade_data}
+        exit_storage_info = {key: {}}
         self.trade_management.add_or_update_storage(
             key=self.STORAGE_TRADE_KEY, value=trade_storage_info)
+        if not self.trade_management.storage.get(self.STORAGE_EXIT_KEY).get(key):
+            self.trade_management.add_or_update_storage(
+                key=self.STORAGE_EXIT_KEY, value=exit_storage_info)
         return trade_obj
 
-    def exit_condition_1(self, trade_obj):
-        last_close_price = self.get_current_price(trade_obj.symbol)
+    def exit_condition_1(self, trade_obj, number):
         if trade_obj.position_type == PositionType.BUY.value:
-            if last_close_price > (trade_obj.trade_price + trade_obj.trade_price * (20/100)):
-                return True
-        return False
+            return Data.last_close_price(trade_obj.symbol, self.system.timeframe) > trade_obj.trade_price + (trade_obj.trade_price * self.get_entry_configurations().get(number).get("limit_trigger"))
+        if trade_obj.position_type == PositionType.SELL.value:
+            return Data.last_close_price(trade_obj.symbol, self.system.timeframe) < trade_obj.trade_price - (trade_obj.trade_price * self.get_entry_configurations().get(number).get("limit_trigger"))
 
     def exit_trade_check_condition_handler(self, trade):
         condition_methods = [
@@ -127,16 +158,9 @@ class Alpha(TradeManagementBase):
         return True
 
     def prepare_exit_trade_handler(self, trade):
-        last_close_price = self.get_current_price(trade.symbol)
-        return {
-            "trade_type": TradeType.CLOSE.value,
-            "parent_trade": trade,
-            "symbol_name": trade.symbol,
-            "trade_price": last_close_price + trade.trade_price * (1/100),
-            "trade_stop_loss": None,
-            "trade_limit": None,
-            "order_type": OrderType.MKT.value,
-            "trade_size": trade.trade_size,
-            "quantity": trade.quantity,
-            "position_type": PositionType.BUY.value if trade.position_type == PositionType.SELL.value else PositionType.SELL.value,
-        }
+        prepared_trades = []
+        value = self.trade_management.storage.get(
+            self.STORAGE_EXIT_KEY).get(trade.pk)
+        if len(value) < len(self.exits_configuration) and self.check_exit_condition(trade, len(value)):
+            prepared_trades.append(self.recalibrate_exit(
+                trade, len(value)))

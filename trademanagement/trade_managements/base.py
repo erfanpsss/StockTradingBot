@@ -46,7 +46,7 @@ class TradeManagementBase:
 
     def prepare_exit_trade_handler(self, trade):
         last_close_price = self.get_current_price(trade.symbol)
-        return {
+        return [{
             "trade_type": TradeType.CLOSE.value,
             "parent_trade": trade,
             "symbol_name": trade.symbol,
@@ -57,14 +57,14 @@ class TradeManagementBase:
             "trade_size": trade.trade_size,
             "quantity": trade.quantity,
             "position_type": PositionType.BUY.value if trade.position_type == PositionType.SELL.value else PositionType.SELL.value,
-        }
+        }]
 
     def exit_trade_finder(self):
         for trade in self.existing_trades:
             if self.exit_trade_check_condition_handler(trade):
-                prepared_trade = self.prepare_exit_trade_handler(trade)
-                if prepared_trade:
-                    self.closing_trades.append(prepared_trade)
+                prepared_trades = self.prepare_exit_trade_handler(trade)
+                if prepared_trades:
+                    self.closing_trades += prepared_trades
 
     def exit_trade_handler(self):
         """To be overriden"""
