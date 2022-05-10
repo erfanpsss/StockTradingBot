@@ -33,7 +33,7 @@ class Trade(models.Model):
     trade_price = models.FloatField(blank=True, null=True)
     trade_size = models.FloatField(blank=True, null=True)
     quantity = models.FloatField(blank=True, null=True)
-    main_quanity = models.FloatField(blank=True, null=True)
+    main_quantity = models.FloatField(blank=True, null=True)
     filled_quantity = models.FloatField(blank=True, null=True)
     trade_stop_loss = models.FloatField(blank=True, null=True)
     trade_limit = models.FloatField(blank=True, null=True)

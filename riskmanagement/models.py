@@ -65,7 +65,7 @@ class RiskManagement(models.Model):
         return indicators_configurations
 
     def init(self, system):
-        module = importlib.import_module("riskmanagement.risk_management")
+        module = importlib.import_module("riskmanagement.risk_managements")
         risk_management_class = getattr(module, self.risk_management_class)
         conf = {"risk_management": self, "system": system}
         self.risk_management: "RiskManagement" = risk_management_class(**conf)

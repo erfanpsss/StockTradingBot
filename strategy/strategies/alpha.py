@@ -16,8 +16,7 @@ class Alpha(StrategyBase):
     def run(self):
         super().run()
         try:
-            with transaction.atomic():
-                pass
+            return []
 
         except Exception as e:
             print("Alpha", e)

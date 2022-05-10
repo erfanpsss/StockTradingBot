@@ -10,12 +10,12 @@ class StrategyBase:
                                            ] = parameter["args"]
 
     def setup(self):
-        if not self.strategy.strategy_storage:
-            self.strategy.strategy_storage = {}
-            self.strategy.save(update_fields=['strategy_storage'])
+        if not self.strategy.storage:
+            self.strategy.storage = {}
+            self.strategy.save(update_fields=['storage'])
 
     def run(self):
-        pass
+        return []
 
 
 class SampleStrategy(StrategyBase):
@@ -28,10 +28,7 @@ class SampleStrategy(StrategyBase):
     def run(self):
         super().run()
         try:
-            decision = self.N
-            with transaction.atomic():
-                pass
-
+            return []
         except Exception as e:
             print("SampleStrategy", e)
-            return decision
+            return []

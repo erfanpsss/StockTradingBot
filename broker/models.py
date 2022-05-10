@@ -87,24 +87,26 @@ class Broker(models.Model):
     def account_info(self):
         return f"Balance: {self.balance}, equity: {self.equity}"
 
+    @property
     def _portfolio_queryset(self):
         return self.broker_trades.values("symbol").filter(
             status__in=[TradeStatusList.FILLED.value]).annotate(total=Sum("quantity"), symbol_name=F("symbol__name")).filter(total__gt=0)
 
     @property
     def portfolio(self):
-        return list(self._portfolio_queryset())
+        return list(self._portfolio_queryset)
 
     @property
     def portfolio_symbols(self):
-        return list(self._portfolio_queryset().values_list("symbol_name", flat=True))
+
+        return list(self._portfolio_queryset.values_list("symbol_name", flat=True))
 
     @property
     def portfolio_open_trades_queryset(self):
         return self.broker_trades.filter(
             trade_type=TradeType.OPEN.value,
-            symbol__in=self.portfolio_symbols,
-            status__in=[TradeStatusList.FILLED.value]).exclude(closed_quantity=F("main_quantity")).exclude(parent__closed_quantity=F("parent__main_quantity"))
+            symbol__name__in=self.portfolio_symbols,
+            status__in=[TradeStatusList.FILLED.value]).exclude(closed_quantity=F("main_quantity")).exclude(parent_trade__closed_quantity=F("parent_trade__main_quantity"))
 
     @property
     def symbol_holdings(self, symbol):

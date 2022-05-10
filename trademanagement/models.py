@@ -77,7 +77,7 @@ class TradeManagement(models.Model):
             pass
 
     def init(self, system):
-        module = importlib.import_module("trademanagement.trade_management")
+        module = importlib.import_module("trademanagement.trade_managements")
         trade_management_class = getattr(module, self.trade_management_class)
         conf = {"trade_management": self, "system": system}
         self.trade_management: "TradeManagement" = trade_management_class(

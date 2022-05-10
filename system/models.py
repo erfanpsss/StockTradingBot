@@ -99,4 +99,4 @@ class System(models.Model):
 
     def run(self):
         self.get_data()
-        self.trade_management.run()
+        self.trade_management.run(self)

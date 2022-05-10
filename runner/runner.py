@@ -14,7 +14,7 @@ import threading
 class Runner:
     def __init__(self, *args, **kwargs):
         self.systems: List[System] = list(
-            System.objects.filter(active=True))
+            System.objects.filter(is_active=True))
         self.runner_status = None
 
     def refresh_trade_status(self):

@@ -34,8 +34,8 @@ class TradeManagementBase:
         return Data.last_close_price(symbol, self.system.base_timeframe)
 
     def get_existing_trades(self):
-        self.existing_trades = list[self.system.broker.portfolio_open_trades_queryset.filter(
-            executor=self.system)]
+        self.existing_trades = list(self.system.broker.portfolio_open_trades_queryset.filter(
+            executor=self.system))
 
     def exit_trade_check_condition_handler(self, trade):
         last_close_price = self.get_current_price(trade.symbol)
@@ -105,8 +105,10 @@ class TradeManagementBase:
 
     def dicover_trade(self):
         if self.system.is_active_manual_trade_handling:
+            print("Discovering manual trades...")
             self.manual_trades()
         if self.system.is_active_automatic_trade_handling:
+            print("Discovering automatic trades...")
             self.automatic_trades()
 
     def subscribe_symbol_timeframe(self):
@@ -119,14 +121,15 @@ class TradeManagementBase:
             for automatic_trade in self.automatic_trade_symbols:
                 self.system.add_symbol_timeframe_pair(
                     self, automatic_trade["sumbol_name"], automatic_trade["timeframe"])
+        print("Completed symbol timeframe subscription...")
 
     def prepare_trade(self):
         if self.system.is_active_manual_trade_handling:
             self.prepared_trades = self.system.risk_management.run(
-                self.manual_trades, self.system)
+                self.manual_trade_symbols, self.system)
         if self.system.is_active_automatic_trade_handling:
             self.prepared_trades += self.system.risk_management.run(
-                self.automatic_trades, self.system)
+                self.automatic_trade_symbols, self.system)
 
     def create_trade_obj_handler(self, trade):
         if trade.get("pk"):
@@ -137,7 +140,7 @@ class TradeManagementBase:
             trade_obj.trade_limit = trade.get("trade_limit"),
             trade_obj.trade_size = trade.get("trade_size"),
             trade_obj.quantity = trade.get("quantity"),
-            trade_obj.parent_trade = trade.get("parent"),
+            trade_obj.parent_trade = trade.get("parent_trade"),
             trade_obj.position_type = trade.get("position_type "),
             trade_obj.main_quantity = trade.get(
                 "main_quantity", trade.get("quantity")),
@@ -158,7 +161,7 @@ class TradeManagementBase:
                 trade_size=trade.get("trade_size"),
                 position_type=trade.get("position_type "),
                 quantity=trade.get("quantity"),
-                parent_trade=trade.get("parent"),
+                parent_trade=trade.get("parent_trade"),
                 main_quantity=trade.get(
                     "main_quantity", trade.get("quantity")),
                 executor=self.system
@@ -215,13 +218,21 @@ class TradeManagementBase:
         pass
 
     def run(self):
+        print("discover_exit_trade...")
         self.discover_exit_trade()
+        print("execute_exit_trade...")
         self.execute_exit_trade()
+        print("dicover_trade...")
         self.dicover_trade()
+        print("subscribe_symbol_timeframe...")
         self.subscribe_symbol_timeframe()
+        print("prepare_trade...")
         self.prepare_trade()
+        print("execute_trade...")
         self.execute_trade()
+        print("extra_logic_handler...")
         self.extra_logic_handler()
+        print("finished trademanagement run...")
 
 
 class SampleTradeManagement(TradeManagementBase):

@@ -97,7 +97,7 @@ class Alpha(TradeManagementBase):
 
     def discover_complementary_trade(self):
 
-        for key, value in self.trade_management.storage.get(self.STORAGE_TRADE_KEY).items():
+        for key, value in self.trade_management.storage.get(self.STORAGE_TRADE_KEY, {}).items():
             parent_trade_obj = Trade.objects.get(pk=key)
             if len(value) < len(self.entries_configuration) and self.check_entry_condition(parent_trade_obj, len(value)):
                 trade_data = self.recalibrate_trade(
@@ -126,7 +126,7 @@ class Alpha(TradeManagementBase):
         trade_data = []
         if trade.parent_trade:
             key = str(trade_obj.parent_trade.pk)
-            trade_data = self.trade_management.storage.get(self.STORAGE_TRADE_KEY).get(
+            trade_data = self.trade_management.storage.get(self.STORAGE_TRADE_KEY, {}).get(
                 str(trade_obj.parent_trade.pk))
             if trade_data:
                 trade_data.append(str(trade_obj.pk))
@@ -138,7 +138,7 @@ class Alpha(TradeManagementBase):
         exit_storage_info = {key: {}}
         self.trade_management.add_or_update_storage(
             key=self.STORAGE_TRADE_KEY, value=trade_storage_info)
-        if not self.trade_management.storage.get(self.STORAGE_EXIT_KEY).get(key):
+        if not self.trade_management.storage.get(self.STORAGE_EXIT_KEY, {}).get(key):
             self.trade_management.add_or_update_storage(
                 key=self.STORAGE_EXIT_KEY, value=exit_storage_info)
         return trade_obj
