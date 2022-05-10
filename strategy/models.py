@@ -59,7 +59,7 @@ class Strategy(models.Model):
         Account, on_delete=models.CASCADE, related_name="account_strategies")
     description = models.TextField(null=True, blank=True)
     indicators_configuration = models.JSONField(
-        default=default_indicators_configuration
+        null=True, blank=True, default=default_indicators_configuration
     )
     configurations = models.JSONField(
         null=True, blank=True, default=dict)
@@ -70,6 +70,9 @@ class Strategy(models.Model):
     class Meta:
         verbose_name = "Strategy"
         verbose_name_plural = "Strategies"
+
+    def __str__(self):
+        return self.name
 
     @classmethod
     def get_available_indicator_configuration(cls):

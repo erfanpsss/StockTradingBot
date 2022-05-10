@@ -22,7 +22,7 @@ class TradeManagement(models.Model):
     is_active = models.BooleanField(default=False)
     description = models.TextField(null=True, blank=True)
     indicators_configuration = models.JSONField(
-        default=default_indicators_configuration
+        null=True, blank=True, default=default_indicators_configuration
     )
     configurations = models.JSONField(default=dict, null=True, blank=True, )
     storage = models.JSONField(default=dict, null=True, blank=True,)

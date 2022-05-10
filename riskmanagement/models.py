@@ -22,7 +22,7 @@ class RiskManagement(models.Model):
     is_active = models.BooleanField(default=False)
     description = models.TextField(null=True, blank=True)
     indicators_configuration = models.JSONField(
-        default=default_indicators_configuration
+        null=True, blank=True, default=default_indicators_configuration
     )
     allowed_trading_capital = models.FloatField(default=0.0)
     risk = models.FloatField(default=0.0)

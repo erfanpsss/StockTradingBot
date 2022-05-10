@@ -37,9 +37,10 @@ class System(models.Model):
     strategy = models.ForeignKey(
         Strategy, on_delete=models.SET_NULL, null=True, blank=True, related_name="system_strategies")
 
-    symbol_timeframe_pair = models.JSONField(default=dict)
-    configurations = models.JSONField(default=dict)
-    storage = models.JSONField(default=dict)
+    symbol_timeframe_pair = models.JSONField(
+        null=True, blank=True, default=dict)
+    configurations = models.JSONField(null=True, blank=True, default=dict)
+    storage = models.JSONField(null=True, blank=True, default=dict)
     created_on = models.DateTimeField(auto_now_add=True)
     last_update = models.DateTimeField(auto_now=True)
 
