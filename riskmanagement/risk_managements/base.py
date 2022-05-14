@@ -3,17 +3,40 @@ from django.db import transaction
 
 class RiskManagementBase:
     def __init__(self, *args, **kwargs):
-        self.system = kwargs["system"]
-        self.risk_management = kwargs["risk_management"]
+        self.system: "System" = kwargs["system"]
+        self.risk_management: " RiskManagement" = kwargs["risk_management"]
         self.indicators_parameter_dict = {}
         for parameter in self.risk_management.indicators_configuration:
             self.indicators_parameter_dict[parameter["class"]
                                            ] = parameter["args"]
 
+        self.buying_power = self.system.broker.buying_power
+
     def setup(self):
         if not self.risk_management.storage:
             self.risk_management.storage = {}
             self.risk_management.save()
+
+    @property
+    def allowed_trading_capital(self):
+        try:
+            return self.buying_power * self.risk_management.allowed_trading_capital_percent
+        except:
+            return 0.0
+
+    @property
+    def risk_amount(self):
+        try:
+            return self.allowed_trading_capital * self.risk_management.risk_percent
+        except:
+            return 0.0
+
+    @property
+    def max_capital_allocation_per_trade(self):
+        try:
+            return self.allowed_trading_capital * self.risk_management.max_capital_allocation_per_trade_percent
+        except:
+            return 0.0
 
     def get_data(self, trade):
         entry_price = trade["trade_price"]

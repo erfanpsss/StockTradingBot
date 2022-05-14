@@ -231,7 +231,7 @@ class InteractiveBrokers(BrokerProcessor):
                     "ticker": kwargs.get("symbol").upper(),
                     "tif": "GTC",
                     "referrer": "test",
-                    "quantity": kwargs.get("quantity"),
+                    "quantity": int(kwargs.get("quantity")),
                     "cashQty": None,
                     "fxQty": None,
                     "useAdaptive": False,
@@ -242,6 +242,7 @@ class InteractiveBrokers(BrokerProcessor):
                 },
             ],
         }
+        print("Open position payload: ", payload)
         return self.broker_request("post", self.PLACE_ORDER_URL.format(account_id=self.account_id), data=payload)
 
     def reply_place_order(self, reply_id):

@@ -22,6 +22,7 @@ class TradeManagementBase:
         self.manual_trade_symbols = []
         self.automatic_trade_symbols = []
         self.prepared_trades = []
+        self.double_prepared_trades = []
         self.trade_objects = []
         self.executed_trades = []
 
@@ -85,18 +86,18 @@ class TradeManagementBase:
 
     def manual_trades(self):
         self.manual_trade_symbols = list(Trade.objects.filter(
-            executor=self.system, is_executed=False).annotate(
+            executor=self.system, is_executed=False).exclude(status__in=[TradeStatusList.FAILED.value]).annotate(
                 symbol_name=F("symbol__name")
         ).values(
-                "pk",
-                "symbol_name",
-                "trade_price",
-                "trade_stop_loss",
-                "trade_limit",
-                "order_type",
-                "trade_size",
-                "quantity",
-                "position_type"
+            "pk",
+            "symbol_name",
+            "trade_price",
+            "trade_stop_loss",
+            "trade_limit",
+            "order_type",
+            "trade_size",
+            "quantity",
+            "position_type"
         )
         )
 
@@ -107,20 +108,22 @@ class TradeManagementBase:
         if self.system.is_active_manual_trade_handling:
             print("Discovering manual trades...")
             self.manual_trades()
+            print("Manual trades:", self.manual_trade_symbols)
         if self.system.is_active_automatic_trade_handling:
             print("Discovering automatic trades...")
             self.automatic_trades()
+            print("Automatic trades:", self.automatic_trade_symbols)
 
     def subscribe_symbol_timeframe(self):
         if self.system.is_active_manual_trade_handling:
             for manual_trade in self.manual_trade_symbols:
                 self.system.add_symbol_timeframe_pair(
-                    self, manual_trade["sumbol_name"], self.system.base_timeframe.name)
+                    manual_trade["symbol_name"], self.system.base_timeframe.name)
                 manual_trade["timeframe"] = self.system.base_timeframe.name
         if self.system.is_active_automatic_trade_handling:
             for automatic_trade in self.automatic_trade_symbols:
                 self.system.add_symbol_timeframe_pair(
-                    self, automatic_trade["sumbol_name"], automatic_trade["timeframe"])
+                    automatic_trade["symbol_name"], automatic_trade["timeframe"])
         print("Completed symbol timeframe subscription...")
 
     def prepare_trade(self):
@@ -132,28 +135,29 @@ class TradeManagementBase:
                 self.automatic_trade_symbols, self.system)
 
     def create_trade_obj_handler(self, trade):
+        symbol = Symbol.objects.get(name=trade.get("symbol_name"))
         if trade.get("pk"):
             trade_obj = Trade.objects.get(pk=trade.get("pk"))
             trade_obj.price = Data.last_close_price(
-                symbol, self.system.timeframe)
-            trade_obj.trade_stop_loss = trade.get("trade_stop_loss"),
-            trade_obj.trade_limit = trade.get("trade_limit"),
-            trade_obj.trade_size = trade.get("trade_size"),
-            trade_obj.quantity = trade.get("quantity"),
-            trade_obj.parent_trade = trade.get("parent_trade"),
-            trade_obj.position_type = trade.get("position_type "),
+                symbol, self.system.base_timeframe)
+            trade_obj.trade_stop_loss = trade.get("trade_stop_loss")
+            trade_obj.trade_limit = trade.get("trade_limit")
+            trade_obj.trade_size = trade.get("trade_size")
+            trade_obj.quantity = trade.get("quantity")
+            trade_obj.parent_trade = trade.get("parent_trade")
+            trade_obj.position_type = trade.get("position_type ")
             trade_obj.main_quantity = trade.get(
-                "main_quantity", trade.get("quantity")),
+                "main_quantity", trade.get("quantity"))
             trade_obj.filled_quantity = trade.get(
-                "filled_quantity", trade.get("quantity")),
+                "filled_quantity", trade.get("quantity"))
             trade_obj.save(
                 update_fields=["trade_stop_loss", "trade_limit", "trade_size", "quantity"])
         else:
-            symbol = Symbol.objects.get(name=trade.get("symbol_name"))
             trade_obj = Trade.objects.create(
                 order_type=trade.get("order_type"),
                 account=self.system.account,
-                price=Data.last_close_price(symbol, self.system.timeframe),
+                price=Data.last_close_price(
+                    symbol, self.system.base_timeframe),
                 symbol=symbol,
                 trade_price=trade.get("trade_price"),
                 trade_stop_loss=trade.get("trade_stop_loss"),
@@ -173,6 +177,7 @@ class TradeManagementBase:
         return trade
 
     def execute_trade_handler(self, trade_obj):
+        print(f"Executing trade {trade_obj.pk}...")
         trade_obj.open_position()
         trade_obj.refresh_from_db()
 
@@ -186,13 +191,17 @@ class TradeManagementBase:
 
     def execute_trade(self):
         for trade in self.prepared_trades:
-            prepared_trade = self.pre_execute_trade_handler(trade)
-            trade_obj = self.create_trade_obj_handler(prepared_trade)
+            double_prepared_trade = self.system.risk_management.run(
+                [trade], self.system)[0]
+            self.double_prepared_trades.append(double_prepared_trade)
+            ready_trade = self.pre_execute_trade_handler(double_prepared_trade)
+            trade_obj = self.create_trade_obj_handler(ready_trade)
             trade_obj = self.post_execute_trade_handler(trade_obj)
             self.trade_objects.append(trade_obj)
             self.executed_trades.append(self.execute_trade_handler(trade_obj))
 
     def automatic_trade_handler(self):
+        """
         trades = [{
             "pk": "",
             "symbol_name": "",
@@ -207,6 +216,8 @@ class TradeManagementBase:
             "main_quantity": "",
             "timeframe": self.system.base_timeframe.name
         }]
+        """
+        trades = []
         try:
             trades: list = self.system.strategy.run()
         except Exception as e:

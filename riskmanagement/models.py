@@ -24,8 +24,8 @@ class RiskManagement(models.Model):
     indicators_configuration = models.JSONField(
         null=True, blank=True, default=default_indicators_configuration
     )
-    allowed_trading_capital = models.FloatField(default=0.0)
-    risk = models.FloatField(default=0.0)
+    allowed_trading_capital_percent = models.FloatField(default=0.0)
+    risk_percent = models.FloatField(default=0.0)
     max_capital_allocation_per_trade_percent = models.FloatField(default=0.0)
     configurations = models.JSONField(default=dict, null=True, blank=True,)
     storage = models.JSONField(default=dict, null=True, blank=True,)
@@ -68,14 +68,16 @@ class RiskManagement(models.Model):
         module = importlib.import_module("riskmanagement.risk_managements")
         risk_management_class = getattr(module, self.risk_management_class)
         conf = {"risk_management": self, "system": system}
-        self.risk_management: "RiskManagement" = risk_management_class(**conf)
+        self.risk_management: "RiskManagementBase" = risk_management_class(
+            **conf)
 
     def run(self, trades: list, system, *args, **kwargs):
         self.init(system)
         self.risk_management.setup()
         prepared_trades = []
         for trade in trades:
-            prepared_trade = self.risk_management.run(trade, *args, **kwargs)
+            prepared_trade = self.risk_management.run(
+                trade, *args, **kwargs)
             if not prepared_trade:
                 continue
             prepared_trades.append(prepared_trade)

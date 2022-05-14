@@ -124,19 +124,19 @@ class Data(models.Model):
         # ]
 
         indicators_configurations_all += list(
-            Strategy.objects.filter(active=True).values_list(
+            Strategy.objects.filter(is_active=True).values_list(
                 "indicators_configuration", flat=True
             )
         )
 
         indicators_configurations_all += list(
-            TradeManagement.objects.filter(active=True).values_list(
+            TradeManagement.objects.filter(is_active=True).values_list(
                 "indicators_configuration", flat=True
             )
         )
 
         indicators_configurations_all += list(
-            RiskManagement.objects.filter(active=True).values_list(
+            RiskManagement.objects.filter(is_active=True).values_list(
                 "indicators_configuration", flat=True
             )
         )

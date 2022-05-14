@@ -7,6 +7,10 @@ import datetime
 from util.consts import *
 import pytz
 from system.models import System
+import time
+
+MAX_RETRY = 3
+RETRY_WAIT = 3
 
 
 class Trade(models.Model):
@@ -23,7 +27,7 @@ class Trade(models.Model):
     order_type = models.CharField(
         max_length=10, choices=ORDER_TYPE_CHOICES, default=OrderType.MKT.value)
     created_at = models.DateTimeField(auto_now_add=True)
-    trade_datetime = models.DateTimeField()
+    trade_datetime = models.DateTimeField(blank=True, null=True)
     broker = models.ForeignKey(
         Broker, on_delete=models.CASCADE, related_name="broker_trades")
     symbol = models.ForeignKey(
@@ -78,15 +82,25 @@ class Trade(models.Model):
             "executor": self.executor,
             "cOID": str(self.pk)
         }
+        print("Opening position with data", data)
         try:
-            transaction_id, status = self.broker.broker.open_position(**data)
-            if not transaction_id:
-                print(transaction_id, status)
-                raise Exception("No transaction id returned")
-            self.position_id = transaction_id
-            self.status = status
+            for counter in range(MAX_RETRY):
+                try:
+                    transaction_id, status = self.broker.broker.open_position(
+                        **data)
+                    if not transaction_id:
+                        print(transaction_id, status)
+                        raise Exception("No transaction id returned")
+                    self.position_id = transaction_id
+                    self.status = status
+                    break
+                except Exception as e:
+                    print(f"Try ({counter + 1})", str(e))
+                    if counter == MAX_RETRY + 2:
+                        raise Exception(str(e))
+                    time.sleep(RETRY_WAIT)
         except Exception as e:
-            print("Trade: open_position", e)
+            print("Trade failed: open_position", e)
             self.position_id = ""
             self.error = str(e)
             self.status = TradeStatusList.FAILED.value

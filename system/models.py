@@ -38,7 +38,7 @@ class System(models.Model):
         Strategy, on_delete=models.SET_NULL, null=True, blank=True, related_name="system_strategies")
 
     symbol_timeframe_pair = models.JSONField(
-        null=True, blank=True, default=dict)
+        null=True, blank=True, default=list)
     configurations = models.JSONField(null=True, blank=True, default=dict)
     storage = models.JSONField(null=True, blank=True, default=dict)
     created_on = models.DateTimeField(auto_now_add=True)
@@ -52,34 +52,38 @@ class System(models.Model):
         verbose_name_plural = "Systems"
 
     def get_data(self):
+        print("Getting data...")
         for pair in self.symbol_timeframe_pair:
             for symbol, timeframes in pair.items():
                 for timeframe in timeframes:
+                    print(f"Getting data for {symbol} {timeframe}...")
                     call_command("get_data", symbol=symbol,
                                  timeframe=timeframe)
 
     def add_symbol_timeframe_pair(self, symbol, timeframe):
+        print("Adding symbol timeframe pair...")
         is_found = False
         current_symbol_timeframe_pairs = self.symbol_timeframe_pair
         for counter, pair in enumerate(current_symbol_timeframe_pairs):
-            if list(pair.key())[0] == symbol and timeframe in list(pair.values())[0]:
+            if list(pair.keys())[0] == symbol and timeframe in list(pair.values())[0]:
                 is_found = True
                 break
-            if list(pair.key())[0] == symbol and timeframe not in list(pair.values())[0]:
+            elif list(pair.keys())[0] == symbol and timeframe not in list(pair.values())[0]:
                 current_symbol_timeframe_pairs[counter][symbol].append(
                     timeframe)
                 is_found = True
                 break
-        if not is_found:
+        if not is_found and symbol and timeframe:
             current_symbol_timeframe_pairs.append({symbol: [timeframe]})
         self.symbol_timeframe_pair = current_symbol_timeframe_pairs
-        self.save(update_fields="symbol_timeframe_pair")
+        self.save(update_fields=["symbol_timeframe_pair"])
+        print("Finished adding symbol timeframe pair...")
 
     def remove_symbol_timeframe_pair(self, symbol, timeframe):
         is_found = False
         current_symbol_timeframe_pairs = self.symbol_timeframe_pair
         for counter, pair in enumerate(current_symbol_timeframe_pairs):
-            if list(pair.key())[0] == symbol and timeframe in list(pair.values())[0]:
+            if list(pair.keys())[0] == symbol and timeframe in list(pair.values())[0]:
                 is_found = True
                 del current_symbol_timeframe_pairs[counter]
                 break

@@ -173,7 +173,7 @@ class IndicatorBase(models.Model):
 
     @property
     def previous_value(self):
-        return self.previous_obj.value if self.previous_obj.value else None
+        return self.previous_obj.value
 
     def get_price_data(self, period):
 
@@ -1039,7 +1039,7 @@ class Rsi(IndicatorBase):
             else:
                 price_data = self.get_price_data(self.period)
                 current_gain = price_data[self.period -
-                    1].price - price_data[self.period - 2].price
+                                          1].price - price_data[self.period - 2].price
                 current_loss = 0
                 if current_gain < 0:
                     current_loss = abs(current_gain)
@@ -1048,94 +1048,84 @@ class Rsi(IndicatorBase):
                 self.avg_gain = sum(gains) / len(gains)
                 self.avg_loss = sum(losses) / len(losses)
                 rs = self.avg_gain/self.avg_loss
-                self.value = 100 - (100 / 1+((self.previous_obj.avg_gain * self.priod-1 + current_gain) / (self.previous_obj.avg_loss * self.priod-1 + current_loss)))
-
+                self.value = 100 - (100 / 1+((self.previous_obj.avg_gain * self.priod-1 +
+                                    current_gain) / (self.previous_obj.avg_loss * self.priod-1 + current_loss)))
 
         except Exception as e:
             print("Rsi", e)
-            self.value=0
+            self.value = 0
 
 
 class Divergence(IndicatorBase):
 
-    id=models.BigAutoField(primary_key=True)
-    price_id=models.ForeignKey(
+    id = models.BigAutoField(primary_key=True)
+    price_id = models.ForeignKey(
         Data, on_delete=models.CASCADE, related_name="divergence"
     )
     # parameters
-    period=models.IntegerField()
+    period = models.IntegerField()
     # values
-    value=models.FloatField()
-    slope_price=models.FloatField()
-    slope_rsi=models.FloatField()
+    value = models.FloatField()
+    slope_price = models.FloatField()
+    slope_rsi = models.FloatField()
 
-    parameters=[
+    parameters = [
         "period",
     ]
 
-    values_output=[
+    values_output = [
         "value",
         "slope_price",
         "slope_rsi",
     ]
 
-
     class Meta:
-        unique_together=("period", "price_id")
+        unique_together = ("period", "price_id")
 
     def get_slope(self, price_data, x_column_name, y_column_name):
 
-        data=pd.DataFrame(price_data)
-        x=data[x_column_name].values.reshape(-1, 1)
-        y=data[y_column_name]
+        data = pd.DataFrame(price_data)
+        x = data[x_column_name].values.reshape(-1, 1)
+        y = data[y_column_name]
 
-        model=LinearRegression()
+        model = LinearRegression()
         model.fit(x, y)
-        data['regression']=model.predict(
+        data['regression'] = model.predict(
             data[y_column_name].values.reshape(-1, 1))
-        slope=(data.regression.iloc[-1] - \
-            data.regression.iloc[0]) / self.period
+        slope = (data.regression.iloc[-1] -
+                 data.regression.iloc[0]) / self.period
         return slope
 
-
-
-
-
-
-
     def calculate(self):
-
         """
 
         """
 
         try:
             print(self.get_subindicator_parameters("Rsi").get('period'))
-            self.value=0
-            self.slope_price=0
-            self.slope_rsi=0
-            price_data=self.get_price_data(
+            self.value = 0
+            self.slope_price = 0
+            self.slope_rsi = 0
+            price_data = self.get_price_data(
                 self.period).values('close_bid', 'datetime')
-            rsi_data=Rsi.objects.filter(
+            rsi_data = Rsi.objects.filter(
                 Q(price_id__symbol=self.price_id.symbol)
                 & Q(price_id__timeframe=self.price_id.timeframe)
                 & Q(period=self.get_subindicator_parameters("Rsi").get('period'))
             ).order_by("-price_id__datetime")[: self.period].values('value', 'price_id__datetime')
 
-            slope_price=self.get_slope(price_data, 'datetime', 'close_bid')
-            slope_rsi=self.get_slope(rsi_data, 'price_id__datetime', 'value')
+            slope_price = self.get_slope(price_data, 'datetime', 'close_bid')
+            slope_rsi = self.get_slope(rsi_data, 'price_id__datetime', 'value')
 
             if slope_price > 0 and slope_rsi < 0:
-                self.value=-1
+                self.value = -1
 
             elif slope_price < 0 and slope_rsi > 0:
-                self.value=1
+                self.value = 1
 
-            self.slope_price=slope_price
-            self.slope_rsi=slope_rsi
-
-
+            self.slope_price = slope_price
+            self.slope_rsi = slope_rsi
 
         except Exception as e:
             print("Divergence", e)
-            self.value=0
+            self.value = 0

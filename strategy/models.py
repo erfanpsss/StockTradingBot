@@ -98,7 +98,7 @@ class Strategy(models.Model):
         module = importlib.import_module("strategy.strategies")
         strategy_class = getattr(module, self.strategy_class)
         conf = {"strategy": self}
-        self.strategy: "Strategy" = strategy_class(**conf)
+        self.strategy: "StrategyBase" = strategy_class(**conf)
 
     def run(self):
         self.init()

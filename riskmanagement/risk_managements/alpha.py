@@ -9,13 +9,6 @@ from indicator.models import Atr
 class Alpha(RiskManagementBase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.buying_power = self.system.broker.buying_power
-        self.allowed_trading_capital = self.risk_management.risk_management_configuration.get(
-            "allowed_trading_capital")
-        self.risk = self.risk_management.risk_management_configuration.get(
-            "risk")
-        self.max_percent_capital_allocation_per_trade = self.risk_management.risk_management_configuration.get(
-            "max_percent_capital_allocation_per_trade")
         self.atr_multiply = self.risk_management.risk_management_configuration.get(
             "atr_multiply")
 
@@ -27,13 +20,18 @@ class Alpha(RiskManagementBase):
             "price_id__datetime").last().value
         if not current_atr:
             raise Exception("No ATR")
+        print("Buying power: ", self.buying_power)
+        print("Current ATR: ", current_atr)
         atr_product = current_atr * self.atr_multiply
         stoploss = entry_price - atr_product
         max_loss_per_share = entry_price - stoploss
-        total_number_of_shares = self.risk / max_loss_per_share
+        print("Max loss per share: ", max_loss_per_share)
+        total_number_of_shares = int(self.risk_amount / max_loss_per_share)
+        print("Total number of shares: ", total_number_of_shares)
         total_trade_size = total_number_of_shares * entry_price
         if total_trade_size > self.max_capital_allocation_per_trade:
-            total_number_of_shares = self.max_capital_allocation_per_trade / max_loss_per_share
+            total_number_of_shares = int(
+                self.max_capital_allocation_per_trade / max_loss_per_share)
             total_trade_size = total_number_of_shares * entry_price
         return {
             "total_trade_size": total_trade_size,
@@ -41,20 +39,6 @@ class Alpha(RiskManagementBase):
             "max_loss_per_share": max_loss_per_share,
             "stoploss": stoploss
         }
-
-    @property
-    def risk_amount(self):
-        try:
-            return self.risk * self.allowed_trading_capital
-        except:
-            return 0.0
-
-    @property
-    def max_capital_allocation_per_trade(self):
-        try:
-            return self.max_percent_capital_allocation_per_trade * self.allowed_trading_capital
-        except:
-            return 0.0
 
     def setup(self):
         super().setup()
@@ -69,6 +53,7 @@ class Alpha(RiskManagementBase):
             prepared_trade["quantity"] = data["total_number_of_shares"]
 
         except Exception as e:
-            print("Alpha", e)
+            print("Alpha risk management", e)
+            print("Alpha risk management, data:", prepared_trade)
 
         return prepared_trade

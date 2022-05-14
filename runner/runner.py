@@ -9,6 +9,7 @@ import pytz
 from broker.models import Broker
 from trade.models import Trade
 import threading
+import traceback
 
 
 class Runner:
@@ -87,5 +88,6 @@ class Runner:
                         system.run()
                     except Exception as e:
                         print(f"Runner error for system {system.pk}", e)
+                        print(traceback.format_exc())
 
             time.sleep(self.runner_status.loop_wait)
