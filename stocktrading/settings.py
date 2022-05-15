@@ -45,6 +45,7 @@ GIT_BRANCH_NAME = env("GIT_BRANCH_NAME")
 # Application definition
 
 INSTALLED_APPS = [
+    'dashboard',
     'account',
     'trade',
     'data',

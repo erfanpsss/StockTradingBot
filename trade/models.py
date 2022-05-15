@@ -55,6 +55,9 @@ class Trade(models.Model):
         verbose_name = "Trade"
         verbose_name_plural = "Trades"
 
+    def __str__(self):
+        return str(self.pk)
+
     def save(self, *args, **kwargs):
         is_new = False if self.pk else True
         super().save(*args, **kwargs)
