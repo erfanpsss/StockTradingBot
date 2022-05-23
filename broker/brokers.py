@@ -590,25 +590,25 @@ class IG(BrokerProcessor):
             dict: the returned format:
         """
         payload = {
-            "currencyCode ": self.broker_instance.currency,
+            "currencyCode": self.broker_instance.currency,
             "dealReference": kwargs.get("cOID"),
-            "direction ": kwargs.get("position_type").upper(),
+            "direction": kwargs.get("position_type").upper(),
             "epic": self.get_symbol_epic(kwargs.get("symbol")),
             "orderType": self.ORDER_TYPE_MAPPING.get(kwargs.get("order_type", "MKT")),
-            "timeInForce": "EXECUTE_AND_ELIMINATE",
             "size": kwargs.get("quantity"),
             "guaranteedStop": "false",
             "expiry": "-",
             "forceOpen": "false",
-            "stopLevel": None,
-            "stopDistance": None,
-            "trailingStop": None,
-            "timeInForce": None,
-            "level": None,
-            "trailingStopIncrement": None,
-            "limitLevel": None,
-            "limitDistance": None,
-            "quoteId": None,
+            # "timeInForce": None,
+            # "stopLevel": None,
+            # "stopDistance": None,
+            # "trailingStop": None,
+            # "timeInForce": None,
+            # "level": None,
+            # "trailingStopIncrement": None,
+            # "limitLevel": None,
+            # "limitDistance": None,
+            # "quoteId": None,
         }
         print("Open position payload: ", payload)
         return self.broker_request("post", self.PLACE_ORDER_URL, data=payload)
@@ -636,6 +636,7 @@ class IG(BrokerProcessor):
             position = self._open_position(*args, **kwargs)
         else:
             position = self._close_position(*args, **kwargs)
+        print(position)
         return position.get("dealReference"), TradeStatusList.FILLED.value if position.get("dealReference") else TradeStatusList.FAILED.value
 
     def _positions(self, *args, **kwargs):
