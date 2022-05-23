@@ -590,27 +590,25 @@ class IG(BrokerProcessor):
             dict: the returned format:
         """
         payload = {
-            {
-                "currencyCode ": self.broker_instance.currency,
-                "dealReference": kwargs.get("cOID"),
-                "direction ": kwargs.get("position_type").upper(),
-                "epic": self.get_symbol_epic(kwargs.get("symbol")),
-                "orderType": self.ORDER_TYPE_MAPPING(kwargs.get("order_type", "MKT")),
-                "timeInForce": "EXECUTE_AND_ELIMINATE",
-                "size": kwargs.get("quantity"),
-                "guaranteedStop": "false",
-                "expiry": "-",
-                "forceOpen": "false",
-                "stopLevel": None,
-                "stopDistance": None,
-                "trailingStop": None,
-                "timeInForce": None,
-                "level": None,
-                "trailingStopIncrement": None,
-                "limitLevel": None,
-                "limitDistance": None,
-                "quoteId": None,
-            },
+            "currencyCode ": self.broker_instance.currency,
+            "dealReference": kwargs.get("cOID"),
+            "direction ": kwargs.get("position_type").upper(),
+            "epic": self.get_symbol_epic(kwargs.get("symbol")),
+            "orderType": self.ORDER_TYPE_MAPPING(kwargs.get("order_type", "MKT")),
+            "timeInForce": "EXECUTE_AND_ELIMINATE",
+            "size": kwargs.get("quantity"),
+            "guaranteedStop": "false",
+            "expiry": "-",
+            "forceOpen": "false",
+            "stopLevel": None,
+            "stopDistance": None,
+            "trailingStop": None,
+            "timeInForce": None,
+            "level": None,
+            "trailingStopIncrement": None,
+            "limitLevel": None,
+            "limitDistance": None,
+            "quoteId": None,
         }
         print("Open position payload: ", payload)
         return self.broker_request("post", self.PLACE_ORDER_URL, data=payload)
@@ -621,17 +619,13 @@ class IG(BrokerProcessor):
         Returns:
             dict: the returned format:
 
-
-
         """
         payload = {
-            {
-                "dealid ": kwargs.get("parent_trade_position_id"),
-                "direction ": kwargs.get("position_type").upper(),
-                "orderType": self.ORDER_TYPE_MAPPING(kwargs.get("order_type", "MKT")),
-                "timeInForce": "EXECUTE_AND_ELIMINATE",
-                "size": kwargs.get("quantity"),
-            },
+            "dealid ": kwargs.get("parent_trade_position_id"),
+            "direction ": kwargs.get("position_type").upper(),
+            "orderType": self.ORDER_TYPE_MAPPING(kwargs.get("order_type", "MKT")),
+            "timeInForce": "EXECUTE_AND_ELIMINATE",
+            "size": kwargs.get("quantity"),
         }
         print("Close position payload: ", payload)
         return self.broker_request("delete", self.PLACE_ORDER_URL, data=payload)
