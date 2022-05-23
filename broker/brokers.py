@@ -589,7 +589,7 @@ class IG(BrokerProcessor):
                 "epic": kwargs.get("symbol"),
                 "orderType": self.ORDER_TYPE_MAPPING(kwargs.get("order_type", "MKT")),
                 "timeInForce": "EXECUTE_AND_ELIMINATE",
-                "size": (kwargs.get("quantity")),
+                "size": kwargs.get("quantity"),
             },
         }
         print("Open position payload: ", payload)
@@ -610,7 +610,7 @@ class IG(BrokerProcessor):
                 "direction ": kwargs.get("position_type").upper(),
                 "orderType": self.ORDER_TYPE_MAPPING(kwargs.get("order_type", "MKT")),
                 "timeInForce": "EXECUTE_AND_ELIMINATE",
-                "size": (kwargs.get("quantity")),
+                "size": kwargs.get("quantity"),
             },
         }
         print("Close position payload: ", payload)
