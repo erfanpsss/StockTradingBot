@@ -83,6 +83,9 @@ class Runner:
                 break
             self.get_stock_data()
             if self.runner_status.enable_systems:
+                self.systems: List[System] = list(
+                    System.objects.filter(is_active=True))
+
                 for system in self.systems:
                     try:
                         system.run()
