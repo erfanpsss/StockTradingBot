@@ -84,7 +84,7 @@ class Trade(models.Model):
             "broker": self.broker,
             "executor": self.executor,
             "cOID": str(self.pk),
-            "parent_trade_position_id": self.parent_trade_position_id()
+            "parent_trade_position_id": self.parent_trade_position_id
         }
         print("Opening position with data", data)
         try:
