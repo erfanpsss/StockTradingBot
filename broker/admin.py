@@ -7,7 +7,7 @@ class AdminBroker(admin.ModelAdmin):
     list_per_page = 10
     list_display = (
         "id",
-        "user",
+        "user_account",
         "name",
         "account_id",
         "is_sandbox",
@@ -18,21 +18,20 @@ class AdminBroker(admin.ModelAdmin):
         "equity",
         "buying_power",
         "used_margin",
-        "connected", 
+        "connected",
         "error",
     )
     list_filter = (
-        "user",
+        "user_account",
         "name",
         "is_sandbox",
-        "connected", 
+        "connected",
     )
     search_fields = (
-        "user",
+        "user_account",
         "name",
         "is_sandbox",
     )
-
 
 
 admin.site.register(Broker, AdminBroker)

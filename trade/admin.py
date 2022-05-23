@@ -5,12 +5,14 @@ from .models import Trade
 @admin.action(description='Close position completely or cancel pending order')
 def total_close_position(modeladmin, request, queryset):
     for position in queryset:
-        Trade.close_position(position, total = True)
+        Trade.close_position(position, total=True)
+
 
 class AdminTrade(admin.ModelAdmin):
     list_per_page = 10
     list_display = (
         "id",
+        "account",
         "status",
         "error",
         "trade_type",
@@ -31,22 +33,24 @@ class AdminTrade(admin.ModelAdmin):
     )
     list_filter = (
         "status",
+        "account",
         "trade_type",
         "broker",
         "symbol",
         "parent_trade",
         "executor",
-        
+
     )
     search_fields = (
         "symbol__name",
+        "account",
         "position_id",
         "parent_trade__position_id",
     )
 
-
     fields = (
         "place_now",
+        "account",
         "trade_type",
         "order_type",
         "position_type",
@@ -59,13 +63,12 @@ class AdminTrade(admin.ModelAdmin):
         "status",
         "trade_datetime",
         "position_id",
+        "is_executed",
         "sent_arguments",
         "error",
     )
 
-
     actions = [total_close_position]
-
 
 
 admin.site.register(Trade, AdminTrade)

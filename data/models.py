@@ -4,6 +4,7 @@ from pyexpat import model
 from tabnanny import verbose
 from django.db import models
 from django.db.models import Q, F
+from matplotlib.pyplot import cla
 import pandas as pd
 import numpy as np
 import math
@@ -24,7 +25,7 @@ FINVIZ_DATETIME_FORMAT_NO_S = "%m/%d/%Y %H:%M"
 
 class Symbol(models.Model):
     id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=20, unique = True)
+    name = models.CharField(max_length=20, unique=True)
 
     class Meta:
         verbose_name = "Sybmol"
@@ -36,6 +37,7 @@ class Symbol(models.Model):
     def __unicode__(self):
         return self.name.upper()
 
+
 class TimeframeAlias(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=20, unique=True)
@@ -46,6 +48,7 @@ class TimeframeAlias(models.Model):
 
     def __str__(self):
         return self.name.upper()
+
 
 class Timeframe(models.Model):
     id = models.AutoField(primary_key=True)
@@ -62,28 +65,27 @@ class Timeframe(models.Model):
         return self.name
 
 
-
-
 class Data(models.Model):
     id = models.AutoField(primary_key=True)
     datetime = models.DateTimeField()
-    timeframe = models.ForeignKey(Timeframe, on_delete=models.CASCADE, related_name = "data_timeframe")
-    symbol = models.ForeignKey(Symbol, on_delete=models.CASCADE, related_name = "data_symbol")
+    timeframe = models.ForeignKey(
+        Timeframe, on_delete=models.CASCADE, related_name="data_timeframe")
+    symbol = models.ForeignKey(
+        Symbol, on_delete=models.CASCADE, related_name="data_symbol")
     open_bid = models.FloatField()
     close_bid = models.FloatField()
     high_bid = models.FloatField()
     low_bid = models.FloatField()
-    open_ask = models.FloatField(blank = True, null = True)
-    close_ask = models.FloatField(blank = True, null = True)
-    high_ask = models.FloatField(blank = True, null = True)
-    low_ask = models.FloatField(blank = True, null = True)
-    volume = models.FloatField(blank = True, null = True)
-        
+    open_ask = models.FloatField(blank=True, null=True)
+    close_ask = models.FloatField(blank=True, null=True)
+    high_ask = models.FloatField(blank=True, null=True)
+    low_ask = models.FloatField(blank=True, null=True)
+    volume = models.FloatField(blank=True, null=True)
+
     class Meta:
         unique_together = ("datetime", "timeframe", "symbol")
         verbose_name = "Data"
         verbose_name_plural = "Data"
-
 
     @property
     def price(self):
@@ -110,8 +112,9 @@ class Data(models.Model):
 
     @classmethod
     def get_available_indicator_configuration(cls):
-        #from risk_management.models import RISK_MANAGEMENT
         from strategy.models import Strategy
+        from riskmanagement.models import RiskManagement
+        from trademanagement.models import TradeManagement
         indicators_configurations_all = []
 
         # Available indicators and configuration format
@@ -121,15 +124,23 @@ class Data(models.Model):
         # ]
 
         indicators_configurations_all += list(
-            Strategy.objects.filter(active=True).values_list(
+            Strategy.objects.filter(is_active=True).values_list(
                 "indicators_configuration", flat=True
             )
         )
-        #indicators_configurations_all += list(
-        #    RISK_MANAGEMENT.objects.filter(active=True).values_list(
-        #        "indicators_configuration", flat=True
-        #    )
-        #)
+
+        indicators_configurations_all += list(
+            TradeManagement.objects.filter(is_active=True).values_list(
+                "indicators_configuration", flat=True
+            )
+        )
+
+        indicators_configurations_all += list(
+            RiskManagement.objects.filter(is_active=True).values_list(
+                "indicators_configuration", flat=True
+            )
+        )
+
         indicators_configurations = []
         for indicator_configuration in indicators_configurations_all:
             for conf in indicator_configuration:
@@ -137,8 +148,19 @@ class Data(models.Model):
                     indicators_configurations.append(conf)
         return indicators_configurations
 
+    @classmethod
+    def last_close_price(cls, symbol, timeframe):
+        try:
+            return cls.objects.filter(symbol=symbol, timeframe=timeframe).order_by("datetime").last().close_bid
+        except:
+            return None
 
-
+    @classmethod
+    def last_open_price(cls, symbol, timeframe):
+        try:
+            return cls.objects.filter(symbol__name=symbol, timeframe__name=timeframe).order_by("datetime").last().open_bid
+        except:
+            return None
 
 
 class IbdData(models.Model):
@@ -146,93 +168,144 @@ class IbdData(models.Model):
 
     # IBD data
     date = models.DateField()
-    symbol = models.ForeignKey(Symbol, on_delete=models.CASCADE, related_name="ibd_data")
-    price = models.FloatField(default = None, blank = True, null = True)
-    price_change_in_currency = models.FloatField(default = None, blank = True, null = True)
-    price_change_in_percentage = models.FloatField(default = None, blank = True, null = True)
-    comp_rating = models.FloatField(default = None, blank = True, null = True)
-    eps_rating = models.FloatField(default = None, blank = True, null = True)
-    industry_group_rank = models.FloatField(default = None, blank = True, null = True)
-    rs_rating = models.FloatField(default = None, blank = True, null = True)
-    ind_grp_rs = models.CharField(default = None, max_length=10, blank = True, null = True)
-    smr_rating = models.CharField(default = None, max_length=10, blank = True, null = True)
-    acc_dis_rating = models.CharField(default = None, max_length=10, blank = True, null = True)
-    spon_rating = models.CharField(default = None, max_length=10, blank = True, null = True)
-    vol_change_in_percentage = models.FloatField(default = None, blank = True, null = True)
-    vol_change_in_1k_s = models.FloatField(default = None, blank = True, null = True)
-    
+    symbol = models.ForeignKey(
+        Symbol, on_delete=models.CASCADE, related_name="ibd_data")
+    price = models.FloatField(default=None, blank=True, null=True)
+    price_change_in_currency = models.FloatField(
+        default=None, blank=True, null=True)
+    price_change_in_percentage = models.FloatField(
+        default=None, blank=True, null=True)
+    comp_rating = models.FloatField(default=None, blank=True, null=True)
+    eps_rating = models.FloatField(default=None, blank=True, null=True)
+    industry_group_rank = models.FloatField(
+        default=None, blank=True, null=True)
+    rs_rating = models.FloatField(default=None, blank=True, null=True)
+    ind_grp_rs = models.CharField(
+        default=None, max_length=10, blank=True, null=True)
+    smr_rating = models.CharField(
+        default=None, max_length=10, blank=True, null=True)
+    acc_dis_rating = models.CharField(
+        default=None, max_length=10, blank=True, null=True)
+    spon_rating = models.CharField(
+        default=None, max_length=10, blank=True, null=True)
+    vol_change_in_percentage = models.FloatField(
+        default=None, blank=True, null=True)
+    vol_change_in_1k_s = models.FloatField(default=None, blank=True, null=True)
+
     # Finviz data
-    company=models.CharField(default = None, max_length = 255, blank = True, null = True)
-    sector=models.CharField(default = None, max_length = 255, blank = True, null = True)
-    industry=models.CharField(default = None, max_length = 255, blank = True, null = True)
-    country=models.CharField(default = None, max_length = 255, blank = True, null = True)
-    market_cap=models.FloatField(default = None, blank = True, null = True)
-    pe=models.FloatField(default = None, blank = True, null = True)
-    forward_pe=models.FloatField(default = None, blank = True, null = True)
-    peg=models.FloatField(default = None, blank = True, null = True)
-    ps=models.FloatField(default = None, blank = True, null = True)
-    pb=models.FloatField(default = None, blank = True, null = True)
-    p_cash=models.FloatField(default = None, blank = True, null = True)
-    p_free_cash_flow=models.FloatField(default = None, blank = True, null = True)
-    dividend_yield_percentage=models.FloatField(default = None, blank = True, null = True)
-    payout_ratio_percentage=models.FloatField(default = None, blank = True, null = True)
-    eps_ttm=models.FloatField(default = None, blank = True, null = True)
-    eps_growth_this_year_percentage=models.FloatField(default = None, blank = True, null = True)
-    eps_growth_next_year_percentage=models.FloatField(default = None, blank = True, null = True)
-    eps_growth_past_5_years_percentage=models.FloatField(default = None, blank = True, null = True)
-    eps_growth_next_5_years_percentage=models.FloatField(default = None, blank = True, null = True)
-    sales_growth_past_5_years_percentage=models.FloatField(default = None, blank = True, null = True)
-    eps_growth_quarter_over_quarter_percentage=models.FloatField(default = None, blank = True, null = True)
-    sales_growth_quarter_over_quarter_percentage=models.FloatField(default = None, blank = True, null = True)
-    shares_outstanding=models.FloatField(default = None, blank = True, null = True)
-    share_float=models.FloatField(default = None, blank = True, null = True)
-    insider_ownership_percentage=models.FloatField(default = None, blank = True, null = True)
-    insider_transactions_percentage=models.FloatField(default = None, blank = True, null = True)
-    institutional_ownership_percentage=models.FloatField(default = None, blank = True, null = True)
-    institutional_transactions_percentage=models.FloatField(default = None, blank = True, null = True)
-    float_short_percentage=models.FloatField(default = None, blank = True, null = True)
-    short_ratio=models.FloatField(default = None, blank = True, null = True)
-    return_on_assets_percentage=models.FloatField(default = None, blank = True, null = True)
-    return_on_equity_percentage=models.FloatField(default = None, blank = True, null = True)
-    return_on_investment_percentage=models.FloatField(default = None, blank = True, null = True)
-    current_ratio=models.FloatField(default = None, blank = True, null = True)
-    quick_ratio=models.FloatField(default = None, blank = True, null = True)
-    lt_debt_equity=models.FloatField(default = None, blank = True, null = True)
-    total_debt_equity=models.FloatField(default = None, blank = True, null = True)
-    gross_margin_percentage=models.FloatField(default = None, blank = True, null = True)
-    operating_margin_percentage=models.FloatField(default = None, blank = True, null = True)
-    profit_margin_percentage=models.FloatField(default = None, blank = True, null = True)
-    performance_week_percentage=models.FloatField(default = None, blank = True, null = True)
-    performance_month_percentage=models.FloatField(default = None, blank = True, null = True)
-    performance_quarter_percentage=models.FloatField(default = None, blank = True, null = True)
-    performance_half_year_percentage=models.FloatField(default = None, blank = True, null = True)
-    performance_year_percentage=models.FloatField(default = None, blank = True, null = True)
-    performance_ytd_percentage=models.FloatField(default = None, blank = True, null = True)
-    beta=models.FloatField(default = None, blank = True, null = True)
-    average_true_range=models.FloatField(default = None, blank = True, null = True)
-    volatility_week_percentage=models.FloatField(default = None, blank = True, null = True)
-    volatility_month_percentage=models.FloatField(default = None, blank = True, null = True)
-    simple_moving_average_20_day_percentage=models.FloatField(default = None, blank = True, null = True)
-    simple_moving_average_50_day_percentage=models.FloatField(default = None, blank = True, null = True)
-    simple_moving_average_200_day_percentage=models.CharField(default = None, max_length = 255, blank = True, null = True)
-    high_50_day_percentage=models.FloatField(default = None, blank = True, null = True)
-    low_50_day_percentage=models.FloatField(default = None, blank = True, null = True)
-    high_52_week_percentage=models.FloatField(default = None, blank = True, null = True)
-    low_52_week_percentage=models.FloatField(default = None, blank = True, null = True)
-    relative_strength_index_14=models.FloatField(default = None, blank = True, null = True)
-    change_from_open_percentage=models.FloatField(default = None, blank = True, null = True)
-    gap_percentage=models.FloatField(default = None, blank = True, null = True)
-    analyst_recom=models.FloatField(default = None, blank = True, null = True)
-    average_volume=models.FloatField(default = None, blank = True, null = True)
-    relative_volume=models.FloatField(default = None, blank = True, null = True)
-    finviz_price=models.FloatField(default = None, blank = True, null = True)
-    change_percentage=models.FloatField(default = None, blank = True, null = True)
-    volume=models.FloatField(default = None, blank = True, null = True)
-    earnings_date=models.DateTimeField(default = None, blank = True, null = True)
-    target_price=models.FloatField(default = None, blank = True, null = True)
-    ipo_date=models.DateField(default = None, blank = True, null = True)
-    after_hours_close=models.FloatField(default = None, blank = True, null = True)
-    after_hours_change_percentage=models.FloatField(default = None, blank = True, null = True)
+    company = models.CharField(
+        default=None, max_length=255, blank=True, null=True)
+    sector = models.CharField(
+        default=None, max_length=255, blank=True, null=True)
+    industry = models.CharField(
+        default=None, max_length=255, blank=True, null=True)
+    country = models.CharField(
+        default=None, max_length=255, blank=True, null=True)
+    market_cap = models.FloatField(default=None, blank=True, null=True)
+    pe = models.FloatField(default=None, blank=True, null=True)
+    forward_pe = models.FloatField(default=None, blank=True, null=True)
+    peg = models.FloatField(default=None, blank=True, null=True)
+    ps = models.FloatField(default=None, blank=True, null=True)
+    pb = models.FloatField(default=None, blank=True, null=True)
+    p_cash = models.FloatField(default=None, blank=True, null=True)
+    p_free_cash_flow = models.FloatField(default=None, blank=True, null=True)
+    dividend_yield_percentage = models.FloatField(
+        default=None, blank=True, null=True)
+    payout_ratio_percentage = models.FloatField(
+        default=None, blank=True, null=True)
+    eps_ttm = models.FloatField(default=None, blank=True, null=True)
+    eps_growth_this_year_percentage = models.FloatField(
+        default=None, blank=True, null=True)
+    eps_growth_next_year_percentage = models.FloatField(
+        default=None, blank=True, null=True)
+    eps_growth_past_5_years_percentage = models.FloatField(
+        default=None, blank=True, null=True)
+    eps_growth_next_5_years_percentage = models.FloatField(
+        default=None, blank=True, null=True)
+    sales_growth_past_5_years_percentage = models.FloatField(
+        default=None, blank=True, null=True)
+    eps_growth_quarter_over_quarter_percentage = models.FloatField(
+        default=None, blank=True, null=True)
+    sales_growth_quarter_over_quarter_percentage = models.FloatField(
+        default=None, blank=True, null=True)
+    shares_outstanding = models.FloatField(default=None, blank=True, null=True)
+    share_float = models.FloatField(default=None, blank=True, null=True)
+    insider_ownership_percentage = models.FloatField(
+        default=None, blank=True, null=True)
+    insider_transactions_percentage = models.FloatField(
+        default=None, blank=True, null=True)
+    institutional_ownership_percentage = models.FloatField(
+        default=None, blank=True, null=True)
+    institutional_transactions_percentage = models.FloatField(
+        default=None, blank=True, null=True)
+    float_short_percentage = models.FloatField(
+        default=None, blank=True, null=True)
+    short_ratio = models.FloatField(default=None, blank=True, null=True)
+    return_on_assets_percentage = models.FloatField(
+        default=None, blank=True, null=True)
+    return_on_equity_percentage = models.FloatField(
+        default=None, blank=True, null=True)
+    return_on_investment_percentage = models.FloatField(
+        default=None, blank=True, null=True)
+    current_ratio = models.FloatField(default=None, blank=True, null=True)
+    quick_ratio = models.FloatField(default=None, blank=True, null=True)
+    lt_debt_equity = models.FloatField(default=None, blank=True, null=True)
+    total_debt_equity = models.FloatField(default=None, blank=True, null=True)
+    gross_margin_percentage = models.FloatField(
+        default=None, blank=True, null=True)
+    operating_margin_percentage = models.FloatField(
+        default=None, blank=True, null=True)
+    profit_margin_percentage = models.FloatField(
+        default=None, blank=True, null=True)
+    performance_week_percentage = models.FloatField(
+        default=None, blank=True, null=True)
+    performance_month_percentage = models.FloatField(
+        default=None, blank=True, null=True)
+    performance_quarter_percentage = models.FloatField(
+        default=None, blank=True, null=True)
+    performance_half_year_percentage = models.FloatField(
+        default=None, blank=True, null=True)
+    performance_year_percentage = models.FloatField(
+        default=None, blank=True, null=True)
+    performance_ytd_percentage = models.FloatField(
+        default=None, blank=True, null=True)
+    beta = models.FloatField(default=None, blank=True, null=True)
+    average_true_range = models.FloatField(default=None, blank=True, null=True)
+    volatility_week_percentage = models.FloatField(
+        default=None, blank=True, null=True)
+    volatility_month_percentage = models.FloatField(
+        default=None, blank=True, null=True)
+    simple_moving_average_20_day_percentage = models.FloatField(
+        default=None, blank=True, null=True)
+    simple_moving_average_50_day_percentage = models.FloatField(
+        default=None, blank=True, null=True)
+    simple_moving_average_200_day_percentage = models.CharField(
+        default=None, max_length=255, blank=True, null=True)
+    high_50_day_percentage = models.FloatField(
+        default=None, blank=True, null=True)
+    low_50_day_percentage = models.FloatField(
+        default=None, blank=True, null=True)
+    high_52_week_percentage = models.FloatField(
+        default=None, blank=True, null=True)
+    low_52_week_percentage = models.FloatField(
+        default=None, blank=True, null=True)
+    relative_strength_index_14 = models.FloatField(
+        default=None, blank=True, null=True)
+    change_from_open_percentage = models.FloatField(
+        default=None, blank=True, null=True)
+    gap_percentage = models.FloatField(default=None, blank=True, null=True)
+    analyst_recom = models.FloatField(default=None, blank=True, null=True)
+    average_volume = models.FloatField(default=None, blank=True, null=True)
+    relative_volume = models.FloatField(default=None, blank=True, null=True)
+    finviz_price = models.FloatField(default=None, blank=True, null=True)
+    change_percentage = models.FloatField(default=None, blank=True, null=True)
+    volume = models.FloatField(default=None, blank=True, null=True)
+    earnings_date = models.DateTimeField(default=None, blank=True, null=True)
+    target_price = models.FloatField(default=None, blank=True, null=True)
+    ipo_date = models.DateField(default=None, blank=True, null=True)
+    after_hours_close = models.FloatField(default=None, blank=True, null=True)
+    after_hours_change_percentage = models.FloatField(
+        default=None, blank=True, null=True)
 
     class Meta:
         unique_together = ("date", "symbol")
@@ -247,7 +320,7 @@ class IbdDataFile(models.Model):
     data_date = models.DateField()
     is_processed = models.BooleanField(default=False)
     is_processing = models.BooleanField(default=False)
-    processed_date = models.DateTimeField(blank = True, null = True)
+    processed_date = models.DateTimeField(blank=True, null=True)
     errors = models.TextField(blank=True, null=True)
 
     class Meta:
@@ -260,25 +333,26 @@ class IbdDataFile(models.Model):
             thread = threading.Thread(target=self.create_ibd_record, args=())
             thread.start()
 
-    
     def prepare_data(self):
-        data=pd.read_excel(self.file.file, skiprows=[0,1,2,3])
+        data = pd.read_excel(self.file.file, skiprows=[0, 1, 2, 3])
         record_datetime = data.iloc[0][1]
-        record_datetime=[d.strip() for d in record_datetime.split(",")[-2:]] 
-        record_datetime = datetime.strptime(" ".join(record_datetime), "%B %d %Y") 
+        record_datetime = [d.strip() for d in record_datetime.split(",")[-2:]]
+        record_datetime = datetime.strptime(
+            " ".join(record_datetime), "%B %d %Y")
         record_datetime = self.data_date or record_datetime.date()
-        data=pd.read_excel(self.file.file, skiprows=[0,1,2,3,4,5,6,7,8])
+        data = pd.read_excel(self.file.file, skiprows=[
+                             0, 1, 2, 3, 4, 5, 6, 7, 8])
         data.replace(to_replace=[np.nan, math.nan], value=None, inplace=True)
 
         return data, record_datetime
 
     def create_ibd_record(self):
         self.is_processing = True
-        self.save(update_fields = ["is_processing"])
+        self.save(update_fields=["is_processing"])
         errors = []
         data = pd.DataFrame()
         try:
-            data, record_datetime=self.prepare_data()
+            data, record_datetime = self.prepare_data()
         except Exception as e:
             print(e)
             errors.append(str(e))
@@ -288,7 +362,8 @@ class IbdDataFile(models.Model):
                     symbol_temp = data["Symbol"].iloc[counter]
                     if not symbol_temp or len(symbol_temp) >= 10 or not data["Price"].iloc[counter] or (isinstance(symbol_temp, float) and math.isnan(symbol_temp)):
                         break
-                    symbol_obj, created = Symbol.objects.get_or_create(name = symbol_temp)
+                    symbol_obj, created = Symbol.objects.get_or_create(
+                        name=symbol_temp)
                     ibd_data_kwargs = {
                         "date": record_datetime,
                         "symbol": symbol_obj,
@@ -315,23 +390,24 @@ class IbdDataFile(models.Model):
 
         self.is_processed = True
         self.is_processing = False
-        self.processed_date = pytz.utc.localize(datetime.utcnow())        
+        self.processed_date = pytz.utc.localize(datetime.utcnow())
         self.errors = ", ".join(errors)
         self.save()
         print("IBD data processed ...")
 
+
 class FinvizDataFile(models.Model):
     id = models.AutoField(primary_key=True)
-    creator = models.CharField(max_length=20, choices=CREATOR_CHOICES, default="Manual")
+    creator = models.CharField(
+        max_length=20, choices=CREATOR_CHOICES, default="Manual")
     file = models.FileField(upload_to="finviz_data_files")
     created_date = models.DateTimeField(auto_now_add=True)
     data_date = models.DateField()
     is_processed = models.BooleanField(default=False)
     is_processing = models.BooleanField(default=False)
-    processed_date = models.DateTimeField(blank = True, null = True)
+    processed_date = models.DateTimeField(blank=True, null=True)
     errors = models.TextField(blank=True, null=True)
 
-    
     class Meta:
         verbose_name = "Finviz data file"
         verbose_name_plural = "Finviz data files"
@@ -339,7 +415,8 @@ class FinvizDataFile(models.Model):
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
         if not self.is_processed and not self.is_processing:
-            thread = threading.Thread(target=self.create_finviz_record, args=())
+            thread = threading.Thread(
+                target=self.create_finviz_record, args=())
             thread.start()
 
     @classmethod
@@ -359,7 +436,8 @@ class FinvizDataFile(models.Model):
             "user-agent": user_agent
         }
         session = requests.Session()
-        login_response = session.post(login_url, data=login_payload, headers=headers)
+        login_response = session.post(
+            login_url, data=login_payload, headers=headers)
         screener_response = session.get(screener_url, headers=headers)
         export_response = session.get(export_button_url, headers=headers)
         return export_response.content
@@ -372,7 +450,7 @@ class FinvizDataFile(models.Model):
             if now.hour < 23 or now.weekday() in [5, 6]:
                 return
             today = now.date()
-            if cls.objects.filter(data_date = today).exists():
+            if cls.objects.filter(data_date=today).exists():
                 return
             finviz_data = cls.get_finviz_data()
             file_name = f"finviz_data_{today}.csv"
@@ -380,25 +458,24 @@ class FinvizDataFile(models.Model):
             new_file = cls()
             new_file.data_date = today
             new_file.creator = "Automatic"
-            new_file.file.save(file_name, file, save = True)
+            new_file.file.save(file_name, file, save=True)
             new_file.save()
             print("Finviz file was saved")
         except Exception as e:
             print(e)
 
-
     def prepare_data(self):
-        data=pd.read_csv(self.file.file)
+        data = pd.read_csv(self.file.file)
         data.replace(to_replace=[np.nan, math.nan], value=None, inplace=True)
         date_fields = ["IPO Date"]
         datetime_fields = ["Earnings Date"]
         percentage_fields = [
-            "Dividend Yield", 
-            "Payout Ratio", 
-            "EPS growth this year", 
-            "EPS growth next year", 
-            "EPS growth past 5 years", 
-            "EPS growth next 5 years", 
+            "Dividend Yield",
+            "Payout Ratio",
+            "EPS growth this year",
+            "EPS growth next year",
+            "EPS growth past 5 years",
+            "EPS growth next 5 years",
             "Sales growth past 5 years",
             "EPS growth quarter over quarter",
             "Sales growth quarter over quarter",
@@ -439,30 +516,41 @@ class FinvizDataFile(models.Model):
         for counter, index in enumerate(data.index):
             for date_field in date_fields:
                 if data[date_field].iloc[counter]:
-                    data[date_field].iloc[counter] = datetime.strptime(data[date_field].iloc[counter].strip(), FINVIZ_DATE_FORMAT)
+                    data[date_field].iloc[counter] = datetime.strptime(
+                        data[date_field].iloc[counter].strip(), FINVIZ_DATE_FORMAT)
             for datetime_field in datetime_fields:
                 if data[datetime_field].iloc[counter]:
                     try:
-                        data[datetime_field].iloc[counter] = datetime.strptime(data[datetime_field].iloc[counter].strip(), FINVIZ_DATETIME_FORMAT)
-                        data[datetime_field].iloc[counter] = pytz.utc.localize(data[datetime_field].iloc[counter])
+                        data[datetime_field].iloc[counter] = datetime.strptime(
+                            data[datetime_field].iloc[counter].strip(), FINVIZ_DATETIME_FORMAT)
+                        data[datetime_field].iloc[counter] = pytz.utc.localize(
+                            data[datetime_field].iloc[counter])
                     except:
                         try:
-                            data[datetime_field].iloc[counter] = datetime.strptime(data[datetime_field].iloc[counter].strip(), FINVIZ_DATETIME_FORMAT_NO_P)
-                            data[datetime_field].iloc[counter] = pytz.utc.localize(data[datetime_field].iloc[counter])
+                            data[datetime_field].iloc[counter] = datetime.strptime(
+                                data[datetime_field].iloc[counter].strip(), FINVIZ_DATETIME_FORMAT_NO_P)
+                            data[datetime_field].iloc[counter] = pytz.utc.localize(
+                                data[datetime_field].iloc[counter])
                         except:
                             try:
-                                data[datetime_field].iloc[counter] = datetime.strptime(data[datetime_field].iloc[counter].strip(), FINVIZ_DATETIME_FORMAT_NO_S)
-                                data[datetime_field].iloc[counter] = pytz.utc.localize(data[datetime_field].iloc[counter])
+                                data[datetime_field].iloc[counter] = datetime.strptime(
+                                    data[datetime_field].iloc[counter].strip(), FINVIZ_DATETIME_FORMAT_NO_S)
+                                data[datetime_field].iloc[counter] = pytz.utc.localize(
+                                    data[datetime_field].iloc[counter])
                             except:
-                                data[datetime_field].iloc[counter] = datetime.strptime(data[datetime_field].iloc[counter].strip(), FINVIZ_DATE_FORMAT)
-                                data[datetime_field].iloc[counter] = pytz.utc.localize(data[datetime_field].iloc[counter])
+                                data[datetime_field].iloc[counter] = datetime.strptime(
+                                    data[datetime_field].iloc[counter].strip(), FINVIZ_DATE_FORMAT)
+                                data[datetime_field].iloc[counter] = pytz.utc.localize(
+                                    data[datetime_field].iloc[counter])
             for percentage_field in percentage_fields:
                 if data[percentage_field].iloc[counter]:
                     try:
                         if isinstance(data[percentage_field].iloc[counter], str):
-                            data[percentage_field].iloc[counter] = float(data[percentage_field].iloc[counter].replace("%", "").strip())
+                            data[percentage_field].iloc[counter] = float(
+                                data[percentage_field].iloc[counter].replace("%", "").strip())
                         else:
-                            data[percentage_field].iloc[counter] = float(data[percentage_field].iloc[counter])
+                            data[percentage_field].iloc[counter] = float(
+                                data[percentage_field].iloc[counter])
                     except:
                         pass
 
@@ -474,7 +562,7 @@ class FinvizDataFile(models.Model):
         errors = []
         data = pd.DataFrame()
         try:
-            data, record_datetime=self.prepare_data()
+            data, record_datetime = self.prepare_data()
         except Exception as e:
             print(e)
             errors.append(str(e))
@@ -484,7 +572,8 @@ class FinvizDataFile(models.Model):
                     symbol_temp = data["Ticker"].iloc[counter]
                     if not symbol_temp:
                         continue
-                    symbol_obj, created = Symbol.objects.get_or_create(name = symbol_temp)
+                    symbol_obj, created = Symbol.objects.get_or_create(
+                        name=symbol_temp)
                     ibd_data_kwargs = {
                         "date": record_datetime,
                         "symbol": symbol_obj,
@@ -571,15 +660,13 @@ class FinvizDataFile(models.Model):
         self.is_processing = False
         self.processed_date = pytz.utc.localize(datetime.utcnow())
         self.errors = ", ".join(errors)
-        self.save()                
+        self.save()
         print("Finviz data processed ...")
-
-
 
 
 class Sector(models.Model):
     id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=200, unique = True)
+    name = models.CharField(max_length=200, unique=True)
 
     class Meta:
         verbose_name = "Sector"
@@ -595,50 +682,64 @@ class Sector(models.Model):
 class FinvizSectorData(models.Model):
     id = models.AutoField(primary_key=True)
     date = models.DateField()
-    sector = models.ForeignKey(Sector, on_delete=models.CASCADE, related_name="finviz_sector_data")
-    market_cap = models.FloatField(default = None, blank = True, null = True)
-    pe = models.FloatField(default = None, blank = True, null = True)
-    forward_pe = models.FloatField(default = None, blank = True, null = True)
-    peg = models.FloatField(default = None, blank = True, null = True)
-    ps = models.FloatField(default = None, blank = True, null = True)
-    pb = models.FloatField(default = None, blank = True, null = True)
-    pc = models.FloatField(default = None, blank = True, null = True)
-    p_free_cash_flow = models.FloatField(default = None, blank = True, null = True)
-    dividend_yield_percentage = models.FloatField(default = None, blank = True, null = True)
-    eps_growth_past_5_years_percentage = models.FloatField(default = None, blank = True, null = True)
-    eps_growth_next_5_years_percentage = models.FloatField(default = None, blank = True, null = True)
-    sales_growth_past_5_years_percentage = models.FloatField(default = None, blank = True, null = True)
-    float_short_percentage=models.FloatField(default = None, blank = True, null = True)
-    performance_week_percentage=models.FloatField(default = None, blank = True, null = True)
-    performance_month_percentage=models.FloatField(default = None, blank = True, null = True)
-    performance_quarter_percentage=models.FloatField(default = None, blank = True, null = True)
-    performance_half_year_percentage=models.FloatField(default = None, blank = True, null = True)
-    performance_year_percentage=models.FloatField(default = None, blank = True, null = True)
-    performance_year_to_date_percentage=models.FloatField(default = None, blank = True, null = True)
-    analyst_recom=models.FloatField(default = None, blank = True, null = True)
-    average_volume=models.FloatField(default = None, blank = True, null = True)
-    relative_volume=models.FloatField(default = None, blank = True, null = True)
-    change_percentage=models.FloatField(default = None, blank = True, null = True)
-    volume=models.FloatField(default = None, blank = True, null = True)
-    stocks=models.FloatField(default = None, blank = True, null = True)
+    sector = models.ForeignKey(
+        Sector, on_delete=models.CASCADE, related_name="finviz_sector_data")
+    market_cap = models.FloatField(default=None, blank=True, null=True)
+    pe = models.FloatField(default=None, blank=True, null=True)
+    forward_pe = models.FloatField(default=None, blank=True, null=True)
+    peg = models.FloatField(default=None, blank=True, null=True)
+    ps = models.FloatField(default=None, blank=True, null=True)
+    pb = models.FloatField(default=None, blank=True, null=True)
+    pc = models.FloatField(default=None, blank=True, null=True)
+    p_free_cash_flow = models.FloatField(default=None, blank=True, null=True)
+    dividend_yield_percentage = models.FloatField(
+        default=None, blank=True, null=True)
+    eps_growth_past_5_years_percentage = models.FloatField(
+        default=None, blank=True, null=True)
+    eps_growth_next_5_years_percentage = models.FloatField(
+        default=None, blank=True, null=True)
+    sales_growth_past_5_years_percentage = models.FloatField(
+        default=None, blank=True, null=True)
+    float_short_percentage = models.FloatField(
+        default=None, blank=True, null=True)
+    performance_week_percentage = models.FloatField(
+        default=None, blank=True, null=True)
+    performance_month_percentage = models.FloatField(
+        default=None, blank=True, null=True)
+    performance_quarter_percentage = models.FloatField(
+        default=None, blank=True, null=True)
+    performance_half_year_percentage = models.FloatField(
+        default=None, blank=True, null=True)
+    performance_year_percentage = models.FloatField(
+        default=None, blank=True, null=True)
+    performance_year_to_date_percentage = models.FloatField(
+        default=None, blank=True, null=True)
+    analyst_recom = models.FloatField(default=None, blank=True, null=True)
+    average_volume = models.FloatField(default=None, blank=True, null=True)
+    relative_volume = models.FloatField(default=None, blank=True, null=True)
+    change_percentage = models.FloatField(default=None, blank=True, null=True)
+    volume = models.FloatField(default=None, blank=True, null=True)
+    stocks = models.FloatField(default=None, blank=True, null=True)
+
     class Meta:
         unique_together = ("date", "sector")
         verbose_name = "Finviz sector data"
         verbose_name_plural = "Finviz sector data"
 
+
 class FinvizSectorDataFile(models.Model):
 
     id = models.AutoField(primary_key=True)
-    creator = models.CharField(max_length=20, choices=CREATOR_CHOICES, default="Manual")
+    creator = models.CharField(
+        max_length=20, choices=CREATOR_CHOICES, default="Manual")
     file = models.FileField(upload_to="finviz_sector_data_files")
     created_date = models.DateTimeField(auto_now_add=True)
     data_date = models.DateField()
     is_processed = models.BooleanField(default=False)
     is_processing = models.BooleanField(default=False)
-    processed_date = models.DateTimeField(blank = True, null = True)
+    processed_date = models.DateTimeField(blank=True, null=True)
     errors = models.TextField(blank=True, null=True)
 
-    
     class Meta:
         verbose_name = "Finviz sector data file"
         verbose_name_plural = "Finviz sector data files"
@@ -646,7 +747,8 @@ class FinvizSectorDataFile(models.Model):
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
         if not self.is_processed and not self.is_processing:
-            thread = threading.Thread(target=self.create_finviz_record, args=())
+            thread = threading.Thread(
+                target=self.create_finviz_record, args=())
             thread.start()
 
     @classmethod
@@ -666,7 +768,8 @@ class FinvizSectorDataFile(models.Model):
             "user-agent": user_agent
         }
         session = requests.Session()
-        login_response = session.post(login_url, data=login_payload, headers=headers)
+        login_response = session.post(
+            login_url, data=login_payload, headers=headers)
         screener_response = session.get(screener_url, headers=headers)
         export_response = session.get(export_button_url, headers=headers)
         return export_response.content
@@ -679,7 +782,7 @@ class FinvizSectorDataFile(models.Model):
             if now.hour < 23 or now.weekday() in [5, 6]:
                 return
             today = now.date()
-            if cls.objects.filter(data_date = today).exists():
+            if cls.objects.filter(data_date=today).exists():
                 return
             finviz_data = cls.get_finviz_data()
             file_name = f"finviz_sector_data_{today}.csv"
@@ -687,20 +790,19 @@ class FinvizSectorDataFile(models.Model):
             new_file = cls()
             new_file.data_date = today
             new_file.creator = "Automatic"
-            new_file.file.save(file_name, file, save = True)
+            new_file.file.save(file_name, file, save=True)
             new_file.save()
             print("Finviz sector file was saved")
         except Exception as e:
             print(e)
 
-
     def prepare_data(self):
-        data=pd.read_csv(self.file.file)
+        data = pd.read_csv(self.file.file)
         data.replace(to_replace=[np.nan, math.nan], value=None, inplace=True)
         percentage_fields = [
-            "Dividend Yield", 
-            "EPS growth past 5 years", 
-            "EPS growth next 5 years", 
+            "Dividend Yield",
+            "EPS growth past 5 years",
+            "EPS growth next 5 years",
             "Sales growth past 5 years",
             "Float Short",
             "Performance (Week)",
@@ -719,9 +821,11 @@ class FinvizSectorDataFile(models.Model):
                 if data[percentage_field].iloc[counter]:
                     try:
                         if isinstance(data[percentage_field].iloc[counter], str):
-                            data[percentage_field].iloc[counter] = float(data[percentage_field].iloc[counter].replace("%", "").strip())
+                            data[percentage_field].iloc[counter] = float(
+                                data[percentage_field].iloc[counter].replace("%", "").strip())
                         else:
-                            data[percentage_field].iloc[counter] = float(data[percentage_field].iloc[counter])
+                            data[percentage_field].iloc[counter] = float(
+                                data[percentage_field].iloc[counter])
                     except:
                         pass
 
@@ -733,7 +837,7 @@ class FinvizSectorDataFile(models.Model):
         errors = []
         data = pd.DataFrame()
         try:
-            data, record_datetime=self.prepare_data()
+            data, record_datetime = self.prepare_data()
         except Exception as e:
             print(e)
             errors.append(str(e))
@@ -743,7 +847,8 @@ class FinvizSectorDataFile(models.Model):
                     sector_temp = data["Name"].iloc[counter]
                     if not sector_temp:
                         continue
-                    sector_obj, created = Sector.objects.get_or_create(name = sector_temp)
+                    sector_obj, created = Sector.objects.get_or_create(
+                        name=sector_temp)
                     ibd_data_kwargs = {
                         "date": record_datetime,
                         "sector": sector_obj,
@@ -775,7 +880,8 @@ class FinvizSectorDataFile(models.Model):
                             "stocks":  data["Stocks"].iloc[counter],
                         }
                     }
-                    FinvizSectorData.objects.update_or_create(**ibd_data_kwargs)
+                    FinvizSectorData.objects.update_or_create(
+                        **ibd_data_kwargs)
                 except Exception as e:
                     print(e)
                     errors.append(str(e))
@@ -784,14 +890,8 @@ class FinvizSectorDataFile(models.Model):
         self.is_processing = False
         self.processed_date = pytz.utc.localize(datetime.utcnow())
         self.errors = ", ".join(errors)
-        self.save()                
+        self.save()
         print("Finviz sector data processed ...")
-
-
-
-
-
-
 
 
 class FinvizInsiderData(models.Model):
@@ -803,15 +903,19 @@ class FinvizInsiderData(models.Model):
     id = models.AutoField(primary_key=True)
     created_date = models.DateField()
     date = models.DateField()
-    symbol = models.ForeignKey(Symbol, on_delete=models.CASCADE, related_name="finviz_insider_data")
-    owner = models.CharField(max_length = 200, default = None, blank = True, null = True)
-    relationship = models.CharField(max_length = 200, default = None, blank = True, null = True)
-    transaction = models.CharField(max_length = 200, default = None, blank = True, null = True, choices=INSIDER_TRANSACTION_TYPE_CHOICES)
-    cost = models.FloatField(default = None, blank = True, null = True)
-    shares = models.FloatField(default = None, blank = True, null = True)
-    value = models.FloatField(default = None, blank = True, null = True)
-    shares_total = models.FloatField(default = None, blank = True, null = True)
-    sec_form_4 = models.DateTimeField(default = None, blank = True, null = True)
+    symbol = models.ForeignKey(
+        Symbol, on_delete=models.CASCADE, related_name="finviz_insider_data")
+    owner = models.CharField(
+        max_length=200, default=None, blank=True, null=True)
+    relationship = models.CharField(
+        max_length=200, default=None, blank=True, null=True)
+    transaction = models.CharField(
+        max_length=200, default=None, blank=True, null=True, choices=INSIDER_TRANSACTION_TYPE_CHOICES)
+    cost = models.FloatField(default=None, blank=True, null=True)
+    shares = models.FloatField(default=None, blank=True, null=True)
+    value = models.FloatField(default=None, blank=True, null=True)
+    shares_total = models.FloatField(default=None, blank=True, null=True)
+    sec_form_4 = models.DateTimeField(default=None, blank=True, null=True)
 
     class Meta:
         unique_together = ("date", "symbol", "sec_form_4", "owner")
@@ -819,21 +923,19 @@ class FinvizInsiderData(models.Model):
         verbose_name_plural = "Finviz insider data"
 
 
-
-
 class FinvizInsiderDataFile(models.Model):
 
     id = models.AutoField(primary_key=True)
-    creator = models.CharField(max_length=20, choices=CREATOR_CHOICES, default="Manual")
+    creator = models.CharField(
+        max_length=20, choices=CREATOR_CHOICES, default="Manual")
     file = models.FileField(upload_to="finviz_insider_data_files")
     created_date = models.DateTimeField(auto_now_add=True)
     data_date = models.DateField()
     is_processed = models.BooleanField(default=False)
     is_processing = models.BooleanField(default=False)
-    processed_date = models.DateTimeField(blank = True, null = True)
+    processed_date = models.DateTimeField(blank=True, null=True)
     errors = models.TextField(blank=True, null=True)
 
-    
     class Meta:
         verbose_name = "Finviz insider data file"
         verbose_name_plural = "Finviz insider data files"
@@ -841,9 +943,9 @@ class FinvizInsiderDataFile(models.Model):
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
         if not self.is_processed and not self.is_processing:
-            thread = threading.Thread(target=self.create_finviz_record, args=())
+            thread = threading.Thread(
+                target=self.create_finviz_record, args=())
             thread.start()
-
 
     def extract_page_info(self, content):
         today = datetime.utcnow().date()
@@ -869,8 +971,8 @@ class FinvizInsiderDataFile(models.Model):
             "insider-sale-row-2",
         ]
         for transaction_class in all_transaction_classes:
-            all_rows += soup.body.find_all(attrs={"class":transaction_class})
-        
+            all_rows += soup.body.find_all(attrs={"class": transaction_class})
+
         data_list = []
         for row in all_rows:
             data_list.append([])
@@ -885,13 +987,14 @@ class FinvizInsiderDataFile(models.Model):
                 elif counter == len(fields) - 1:
                     value = field.find_all("a")[0].text
                     value = str(today.year) + " " + value
-                    value = pytz.utc.localize(datetime.strptime(value, "%Y %b %d %H:%M %p"))
+                    value = pytz.utc.localize(
+                        datetime.strptime(value, "%Y %b %d %H:%M %p"))
                 elif field.find_all("a"):
                     value = field.find_all("a")[0].text
                 else:
                     value = field.text
                 data_list[-1].append(value)
-                
+
         data = pd.DataFrame(data_list, columns=columns)
         return data
 
@@ -911,9 +1014,10 @@ class FinvizInsiderDataFile(models.Model):
             "user-agent": user_agent
         }
         session = requests.Session()
-        login_response = session.post(login_url, data=login_payload, headers=headers)
+        login_response = session.post(
+            login_url, data=login_payload, headers=headers)
         insider_response = session.get(insider_url, headers=headers)
-        
+
         return insider_response.content.decode('utf-8')
 
     @classmethod
@@ -924,7 +1028,7 @@ class FinvizInsiderDataFile(models.Model):
             if now.hour < 23 or now.weekday() in [5, 6]:
                 return
             today = now.date()
-            if cls.objects.filter(data_date = today).exists():
+            if cls.objects.filter(data_date=today).exists():
                 return
             finviz_data = cls.get_finviz_data()
             file_name = f"finviz_insider_data_{today}.html"
@@ -932,12 +1036,11 @@ class FinvizInsiderDataFile(models.Model):
             new_file = cls()
             new_file.data_date = today
             new_file.creator = "Automatic"
-            new_file.file.save(file_name, file, save = True)
+            new_file.file.save(file_name, file, save=True)
             new_file.save()
             print("Finviz insider file was saved")
         except Exception as e:
             print(e)
-
 
     def prepare_data(self):
         data = self.extract_page_info(self.file.file)
@@ -951,7 +1054,7 @@ class FinvizInsiderDataFile(models.Model):
         errors = []
         data = pd.DataFrame()
         try:
-            data, record_datetime=self.prepare_data()
+            data, record_datetime = self.prepare_data()
         except Exception as e:
             print(e)
             errors.append(str(e))
@@ -961,7 +1064,8 @@ class FinvizInsiderDataFile(models.Model):
                     symbol_temp = data["Ticker"].iloc[counter]
                     if not symbol_temp:
                         continue
-                    symbol_obj, created = Symbol.objects.get_or_create(name = symbol_temp)
+                    symbol_obj, created = Symbol.objects.get_or_create(
+                        name=symbol_temp)
                     ibd_data_kwargs = {
                         "symbol": symbol_obj,
                         "owner": data["Owner"].iloc[counter],
@@ -977,7 +1081,8 @@ class FinvizInsiderDataFile(models.Model):
                             "shares_total": data["Owner_Shares_Total"].iloc[counter],
                         }
                     }
-                    FinvizInsiderData.objects.update_or_create(**ibd_data_kwargs)
+                    FinvizInsiderData.objects.update_or_create(
+                        **ibd_data_kwargs)
                 except Exception as e:
                     print(e)
                     errors.append(str(e))
@@ -986,5 +1091,5 @@ class FinvizInsiderDataFile(models.Model):
         self.is_processing = False
         self.processed_date = pytz.utc.localize(datetime.utcnow())
         self.errors = ", ".join(errors)
-        self.save()                
+        self.save()
         print("Finviz insider data processed ...")

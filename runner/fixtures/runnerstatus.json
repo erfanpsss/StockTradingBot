@@ -1,0 +1,15 @@
+[
+	{
+		"model": "runner.runnerstatus",
+		"pk": 1,
+		"fields": {
+			"enable": false,
+			"enable_broker_scheduled_calls": false,
+			"enable_finviz": false,
+			"enable_systems": false,
+			"loop_wait": 5,
+			"last_run_time": null,
+			"pid": null
+		}
+	}
+]

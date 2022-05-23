@@ -10,14 +10,15 @@ from .seperate_process_funcs import run_command_from_process
 import time
 import psutil
 
+
 class RunnerStatus(models.Model):
     id = models.AutoField(primary_key=True)
     enable = models.BooleanField(default=False)
     enable_broker_scheduled_calls = models.BooleanField(default=False)
     enable_finviz = models.BooleanField(default=False)
-    enable_strategies = models.BooleanField(default=False)
+    enable_systems = models.BooleanField(default=False)
     loop_wait = models.IntegerField(default=60)
-    last_run_time = models.DateTimeField(blank = True, null = True)
+    last_run_time = models.DateTimeField(blank=True, null=True)
     pid = models.CharField(max_length=50, blank=True, null=True)
 
     def __str__(self):
@@ -33,7 +34,7 @@ class RunnerStatus(models.Model):
 
     def handle_start_runner(self):
         from runner.runner import Runner
-        
+
         if self.enable:
 
             terminate_process_by_id(self.pid)
@@ -42,17 +43,18 @@ class RunnerStatus(models.Model):
                 f"cd {str(settings.BASE_DIR)} &"
                 f"{settings.PYTHON_EXE} manage.py start_runner"
             )
-            
-            process = multiprocessing.Process(target=run_command_from_process, args=(command,))
+
+            process = multiprocessing.Process(
+                target=run_command_from_process, args=(command,))
             process.start()
             self.pid = str(process.pid)
-            self.save(update_fields = ["pid",])
+            self.save(update_fields=["pid", ])
 
         elif not self.enable:
             try:
                 terminate_process_by_id(self.pid)
                 self.pid = None
-                self.save(update_fields = ["pid",])                
+                self.save(update_fields=["pid", ])
             except:
                 pass
 
@@ -60,7 +62,5 @@ class RunnerStatus(models.Model):
         if not self.pk and RunnerStatus.objects.count() >= 1:
             return
         super().save(*args, **kwargs)
-        if kwargs.get("update_fields", [None,])[0] != "pid" and len(kwargs.get("update_fields", [])) != 1:
+        if kwargs.get("update_fields", [None, ])[0] != "pid" and len(kwargs.get("update_fields", [])) != 1:
             self.handle_start_runner()
-
-
