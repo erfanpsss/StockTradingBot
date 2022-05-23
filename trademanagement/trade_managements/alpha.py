@@ -161,8 +161,11 @@ class Alpha(TradeManagementBase):
         condition_methods = [
             self.exit_condition_1,
         ]
+        number = len(self.trade_management.storage.get(
+            self.STORAGE_EXIT_KEY).get(trade.pk, []))
+
         for condition_method in condition_methods:
-            if not condition_method(trade):
+            if not condition_method(trade, number):
                 return False
         return True
 
