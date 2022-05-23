@@ -153,9 +153,9 @@ class Alpha(TradeManagementBase):
 
     def exit_condition_1(self, trade_obj, number):
         if trade_obj.position_type == PositionType.BUY.value:
-            return Data.last_close_price(trade_obj.symbol, self.system.timeframe) > trade_obj.trade_price + (trade_obj.trade_price * self.get_entry_configurations().get(str(number)).get("limit_trigger"))
+            return Data.last_close_price(trade_obj.symbol, self.system.base_timeframe) > trade_obj.trade_price + (trade_obj.trade_price * self.get_entry_configurations().get(str(number)).get("limit_trigger"))
         if trade_obj.position_type == PositionType.SELL.value:
-            return Data.last_close_price(trade_obj.symbol, self.system.timeframe) < trade_obj.trade_price - (trade_obj.trade_price * self.get_entry_configurations().get(str(number)).get("limit_trigger"))
+            return Data.last_close_price(trade_obj.symbol, self.system.base_timeframe) < trade_obj.trade_price - (trade_obj.trade_price * self.get_entry_configurations().get(str(number)).get("limit_trigger"))
 
     def exit_trade_check_condition_handler(self, trade):
         condition_methods = [
