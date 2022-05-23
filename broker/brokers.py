@@ -438,6 +438,7 @@ class IG(BrokerProcessor):
     BASE_URL_LIVE = "https://api.ig.com/gateway/deal/"
     BASE_URL_SANDBOX = "https://demo-api.ig.com/gateway/deal/"
     SESSION = "session"
+    SYMBOL_INFO_URL = "markets"
     PING_SERVER_URL = "tickle"
     ACCOUNT_INFO_URL = "accounts"
     PLACE_ORDER_URL = "positions/otc"
@@ -478,7 +479,7 @@ class IG(BrokerProcessor):
             return requests.delete(self.BASE_URL + url, headers=raw_headers)
         return requests.get(self.BASE_URL + url, headers=raw_headers)
 
-    def broker_request(self, method, url, headers=None, data=None):
+    def broker_request(self, method, url, headers=None, data=None, params=None):
         raw_headers = {
             "X-IG-API-KEY": self.broker_instance.api_key,
             "Accept": "application/json; charset=UTF-8",
@@ -491,13 +492,14 @@ class IG(BrokerProcessor):
             raw_headers.update(headers)
         if method.lower() == "post":
             res = requests.post(self.BASE_URL + url,
-                                data=json.dumps(data), headers=raw_headers).content
+                                data=json.dumps(data), headers=raw_headers, params=params).content
             return json.loads(res)
         if method.lower() == "delete":
             res = requests.delete(self.BASE_URL + url,
-                                  headers=raw_headers).content
+                                  headers=raw_headers, params=params).content
             return json.loads(res)
-        res = requests.get(self.BASE_URL + url, headers=raw_headers).content
+        res = requests.get(self.BASE_URL + url,
+                           headers=raw_headers, params=params).content
         return json.loads(res)
 
     def authenticate(self):
@@ -572,21 +574,27 @@ class IG(BrokerProcessor):
     def used_margin(self):
         pass
 
+    def get_symbol_info(self, symbol_name):
+        params = {
+            "searchTerm": symbol_name,
+        }
+        return self.broker_request("get", self.SYMBOL_INFO_URL, params=params)
+
+    def get_symbol_epic(self, symbol_name):
+        return self.get_symbol_info(symbol_name).get("markets", [{"epic": None}])[0].get("epic")
+
     def _open_position(self, *args, **kwargs):
         """Place new market order
 
         Returns:
             dict: the returned format:
-
-
-
         """
         payload = {
             {
                 "currencyCode ": self.broker_instance.currency,
                 "dealReference": kwargs.get("cOID"),
                 "direction ": kwargs.get("position_type").upper(),
-                "epic": kwargs.get("symbol"),
+                "epic": self.get_symbol_epic(kwargs.get("symbol")),
                 "orderType": self.ORDER_TYPE_MAPPING(kwargs.get("order_type", "MKT")),
                 "timeInForce": "EXECUTE_AND_ELIMINATE",
                 "size": kwargs.get("quantity"),
