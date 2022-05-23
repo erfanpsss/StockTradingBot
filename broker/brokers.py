@@ -594,7 +594,7 @@ class IG(BrokerProcessor):
             "dealReference": kwargs.get("cOID"),
             "direction ": kwargs.get("position_type").upper(),
             "epic": self.get_symbol_epic(kwargs.get("symbol")),
-            "orderType": self.ORDER_TYPE_MAPPING(kwargs.get("order_type", "MKT")),
+            "orderType": self.ORDER_TYPE_MAPPING.get(kwargs.get("order_type", "MKT")),
             "timeInForce": "EXECUTE_AND_ELIMINATE",
             "size": kwargs.get("quantity"),
             "guaranteedStop": "false",
@@ -623,7 +623,7 @@ class IG(BrokerProcessor):
         payload = {
             "dealid ": kwargs.get("parent_trade_position_id"),
             "direction ": kwargs.get("position_type").upper(),
-            "orderType": self.ORDER_TYPE_MAPPING(kwargs.get("order_type", "MKT")),
+            "orderType": self.ORDER_TYPE_MAPPING.get(kwargs.get("order_type", "MKT")),
             "timeInForce": "EXECUTE_AND_ELIMINATE",
             "size": kwargs.get("quantity"),
         }
