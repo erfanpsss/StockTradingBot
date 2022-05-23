@@ -598,6 +598,9 @@ class IG(BrokerProcessor):
                 "orderType": self.ORDER_TYPE_MAPPING(kwargs.get("order_type", "MKT")),
                 "timeInForce": "EXECUTE_AND_ELIMINATE",
                 "size": kwargs.get("quantity"),
+                "guaranteedStop": "false",
+                "expiry": "-",
+                "forceOpen": "false",
             },
         }
         print("Open position payload: ", payload)
