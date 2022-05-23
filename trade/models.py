@@ -141,18 +141,28 @@ class Trade(models.Model):
             "trade_type": trade.trade_type,
             "broker": trade.broker,
             "executor": trade.executor,
-            "parent_id": None,
+            "parent_id": trade,
             "cOID": str(trade.pk),
-            "order_id": position.position_id,
+            "parent_trade_position_id": trade.position_id
         }
         try:
-            transaction_id, status = trade.broker.broker.close_position(**data)
-            if not transaction_id:
-                raise Exception("No transaction id returned")
-            trade.position_id = transaction_id
-            trade.status = status
+            for counter in range(MAX_RETRY):
+                try:
+                    transaction_id, status = trade.broker.broker.close_position(
+                        **data)
+                    if not transaction_id:
+                        print(transaction_id, status)
+                        raise Exception("No transaction id returned")
+                    trade.position_id = transaction_id
+                    trade.status = status
+                    break
+                except Exception as e:
+                    print(f"Try ({counter + 1})", str(e))
+                    if counter == MAX_RETRY + 2:
+                        raise Exception(str(e))
+                    time.sleep(RETRY_WAIT)
         except Exception as e:
-            print(e)
+            print("Trade failed: close_position", e)
             trade.position_id = ""
             trade.error = str(e)
             trade.status = TradeStatusList.FAILED.value
