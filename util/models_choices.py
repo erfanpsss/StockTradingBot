@@ -1,7 +1,12 @@
 
 BROKERS_LIST_CHOICES = (
     ("InteractiveBrokers", "InteractiveBrokers"),
-    ("FakeBroker", "FakeBroker"),
+    ("IG", "IG"),
+)
+
+CURRENCY_LIST_CHOICES = (
+    ("AUD", "AUD"),
+    ("USD", "USD"),
 )
 
 POSITION_TYPES = (

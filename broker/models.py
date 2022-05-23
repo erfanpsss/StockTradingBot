@@ -15,13 +15,19 @@ class Broker(models.Model):
     id = models.AutoField(primary_key=True)
     user_account = models.ForeignKey(
         Account, on_delete=models.CASCADE, related_name="account_broker")
+    is_active = models.BooleanField(default=True)
     name = models.CharField(max_length=50)
     account_id = models.CharField(max_length=255, blank=True, null=True)
     is_sandbox = models.BooleanField(default=True)
+    username = models.CharField(max_length=255, blank=True, null=True)
+    password = models.CharField(max_length=255, blank=True, null=True)
+    api_key = models.CharField(max_length=255, blank=True, null=True)
     public_key = models.CharField(max_length=255, blank=True, null=True)
     secret_key = models.CharField(max_length=255, blank=True, null=True)
     broker_class = models.CharField(
         max_length=50, choices=BROKERS_LIST_CHOICES)
+    currency = models.CharField(
+        max_length=50, choices=CURRENCY_LIST_CHOICES)
     storage = models.JSONField(default=dict, blank=True, null=True)
     balance = models.FloatField(default=0.0)
     equity = models.FloatField(default=0.0)
@@ -52,7 +58,7 @@ class Broker(models.Model):
 
     @property
     def broker(self):
-        return BrokerEngine(self.is_sandbox, self.public_key, self.secret_key, self.broker_class, self.account_id).broker_processor
+        return BrokerEngine(self.is_sandbox, self.public_key, self.secret_key, self.broker_class, self.account_id, self).broker_processor
 
     def connection_update(self):
         try:
@@ -73,9 +79,10 @@ class Broker(models.Model):
     def refresh_account_info(self):
         try:
             account_info = self.broker.account_info
-            self.balance = account_info.get("balance")
-            self.equity = account_info.get("equity")
-            self.buying_power = account_info.get("buying_power")
+            if account_info.get("balance") and account_info.get("equity") and account_info.get("buying_power"):
+                self.balance = account_info.get("balance")
+                self.equity = account_info.get("equity")
+                self.buying_power = account_info.get("buying_power")
             current_storage = self.storage
             current_storage["account_balance_info"] = account_info
             self.storage = current_storage
@@ -114,3 +121,18 @@ class Broker(models.Model):
         if holdings:
             return holdings.total
         return 0
+
+    def add_or_update_storage(self, key, value):
+        current_storage = self.storage
+        current_storage.update({key: value})
+        self.storage = current_storage
+        self.save(update_fields=["storage"])
+
+    def remove_storage(self, key):
+        try:
+            current_storage = self.storage
+            current_storage.pop(key)
+            self.storage = current_storage
+            self.save(update_fields=["storage"])
+        except KeyError:
+            pass

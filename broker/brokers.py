@@ -10,11 +10,14 @@ import requests
 import json
 import time
 from util.consts import TradeStatusList
+from util.models_choices import *
+from util.consts import *
 
 
 class BrokerEngine:
 
-    def __init__(self, is_sandbox: bool, public_key: str, secret_key: str, broker: str, account_id: str, *args, **kwargs):
+    def __init__(self, is_sandbox: bool, public_key: str, secret_key: str, broker: str, account_id: str, broker_instance: "Broker", *args, **kwargs):
+        self.broker_instance = broker_instance
         self.is_sandbox = is_sandbox
         self.public_key = public_key
         self.secret_key = secret_key
@@ -27,15 +30,16 @@ class BrokerEngine:
     def get_broker_processor(self) -> "BrokerProcessor":
         module = importlib.import_module("broker.brokers")
         broker_processor: BrokerProcessor = getattr(module, self.broker)
-        return broker_processor(self.is_sandbox, self.public_key, self.secret_key, self.account_id, self.args, self.kwargs)
+        return broker_processor(self.is_sandbox, self.public_key, self.secret_key, self.account_id, self.broker_instance, self.args, self.kwargs)
 
 
 class BrokerProcessor(ABC):
-    def __init__(self, is_sandbox, public_key, secret_key, account_id, *args, **kwargs):
+    def __init__(self, is_sandbox, public_key, secret_key, account_id, broker_instance, *args, **kwargs):
         self.is_sandbox = is_sandbox
         self.public_key = public_key
         self.secret_key = secret_key
         self.account_id = account_id
+        self.broker_instance = broker_instance
 
     @abstractmethod
     def connect(self):
@@ -427,4 +431,235 @@ class FakeBroker(BrokerProcessor):
         return position_id
 
     def get_data(self, *args, **kwargs):
+        pass
+
+
+class IG(BrokerProcessor):
+    BASE_URL_LIVE = "https://api.ig.com/gateway/deal/"
+    BASE_URL_SANDBOX = "https://demo-api.ig.com/gateway/deal/"
+    SESSION = "session"
+    PING_SERVER_URL = "tickle"
+    ACCOUNT_INFO_URL = "accounts"
+    PLACE_ORDER_URL = "positions/otc"
+    ORDER_STATUS_MAP = {
+        "PendingSubmit": TradeStatusList.PENDING_SUBMIT.value,
+        "PendingCancel": TradeStatusList.PENDING_CANCEL.value,
+        "PreSubmitted": TradeStatusList.PRE_SUBMITTED.value,
+        "Cancelled": TradeStatusList.CANCELLED.value,
+        "Submitted": TradeStatusList.SUBMITTED.value,
+        "Filled": TradeStatusList.FILLED.value,
+        "Inactive": TradeStatusList.INACTIVE.value,
+    }
+
+    WAIT_AFTER_REAUTH = 10
+    MAX_REAUTH_RETRY = 10
+    ORDER_TYPE_MAPPING = {
+        "MKT": "MARKET"
+    }
+
+    @property
+    def BASE_URL(self):
+        if self.is_sandbox:
+            return self.BASE_URL_SANDBOX
+        return self.BASE_URL_LIVE
+
+    def broker_auth_request(self, method, url, headers=None, data=None):
+        raw_headers = {
+            "X-IG-API-KEY": self.broker_instance.api_key,
+            "Accept": "application/json; charset=UTF-8",
+            "Content-Type": "application/json; charset=UTF-8",
+            "Version": "2"
+        }
+        if headers:
+            raw_headers.update(headers)
+        if method.lower() == "post":
+            return requests.post(self.BASE_URL + url, data=json.dumps(data), headers=raw_headers)
+        if method.lower() == "delete":
+            return requests.delete(self.BASE_URL + url, headers=raw_headers)
+        return requests.get(self.BASE_URL + url, headers=raw_headers)
+
+    def broker_request(self, method, url, headers=None, data=None):
+        raw_headers = {
+            "X-IG-API-KEY": self.broker_instance.api_key,
+            "Accept": "application/json; charset=UTF-8",
+            "Content-Type": "application/json; charset=UTF-8",
+            "Version": "1",
+            "X-SECURITY-TOKEN": self.broker_instance.storage.get("X-SECURITY-TOKEN", ""),
+            "CST": self.broker_instance.storage.get("CST", "")
+        }
+        if headers:
+            raw_headers.update(headers)
+        if method.lower() == "post":
+            res = requests.post(self.BASE_URL + url,
+                                data=json.dumps(data), headers=raw_headers).content
+            return json.loads(res)
+        if method.lower() == "delete":
+            res = requests.delete(self.BASE_URL + url,
+                                  headers=raw_headers).content
+            return json.loads(res)
+        res = requests.get(self.BASE_URL + url, headers=raw_headers).content
+        return json.loads(res)
+
+    def authenticate(self):
+        response = self.broker_auth_request("post", self.SESSION, data={
+                                            "identifier": self.broker_instance.username, "password": self.broker_instance.password, "encryptedPassword": None})
+        self.broker_instance.add_or_update_storage(
+            "X-SECURITY-TOKEN", response.headers.get("X-SECURITY-TOKEN"))
+        self.broker_instance.add_or_update_storage(
+            "CST", response.headers.get("CST"))
+
+    def _auth_status(self):
+        return self.broker_request("get", self.SESSION, headers={"Version": "1"})
+
+    @property
+    def auth_status(self):
+        return self._auth_status()
+
+    @property
+    def is_authenticated(self):
+        try:
+            return self.auth_status.get("accountId") == self.account_id
+        except Exception as e:
+            print("is_authenticated", e)
+            return False
+
+    def keep_auth_alive(self):
+        return None
+
+    def reauthenticate(self):
+        return self.authenticate()
+
+    def connect(self):
+        if self.is_authenticated:
+            return True
+        self.reauthenticate()
+        for counter in range(1, self.MAX_REAUTH_RETRY + 1):
+            print("checking connection... ", counter)
+            if self.is_authenticated:
+                return True
+            time.sleep(self.WAIT_AFTER_REAUTH)
+        return False
+
+    def _account_info(self):
+        return self.broker_request("get", self.ACCOUNT_INFO_URL, headers={"Version": "1"})
+
+    @property
+    def account_info(self):
+        accounts_info = self._account_info().get("accounts", [])
+        current_account_info = {}
+        for account in accounts_info:
+            if account.get("accountId") == self.account_id:
+                current_account_info = account
+                break
+        current_account_info.update(
+            {
+                "balance": current_account_info.get("balance", {}).get("balance", ""),
+                "equity": current_account_info.get("balance", {}).get("available", ""),
+                "buying_power": current_account_info.get("balance", {}).get("available", "")
+            }
+        )
+        return current_account_info
+
+    @property
+    def balance(self):
+        return self.account_info.get("balance", {}).get("amount", "")
+
+    @property
+    def equity(self):
+        return self.account_info.get("equity", {}).get("amount", "")
+
+    @property
+    def used_margin(self):
+        pass
+
+    def _open_position(self, *args, **kwargs):
+        """Place new market order
+
+        Returns:
+            dict: the returned format:
+
+
+
+        """
+        payload = {
+            {
+                "currencyCode ": self.broker_instance.currency,
+                "dealReference": kwargs.get("cOID"),
+                "direction ": kwargs.get("position_type").upper(),
+                "epic": kwargs.get("symbol"),
+                "orderType": self.ORDER_TYPE_MAPPING(kwargs.get("order_type", "MKT")),
+                "timeInForce": "EXECUTE_AND_ELIMINATE",
+                "size": (kwargs.get("quantity")),
+            },
+        }
+        print("Open position payload: ", payload)
+        return self.broker_request("post", self.PLACE_ORDER_URL, data=payload)
+
+    def _close_position(self, *args, **kwargs):
+        """Close open position
+
+        Returns:
+            dict: the returned format:
+
+
+
+        """
+        payload = {
+            {
+                "dealid ": kwargs.get("parent_trade_position_id"),
+                "direction ": kwargs.get("position_type").upper(),
+                "orderType": self.ORDER_TYPE_MAPPING(kwargs.get("order_type", "MKT")),
+                "timeInForce": "EXECUTE_AND_ELIMINATE",
+                "size": (kwargs.get("quantity")),
+            },
+        }
+        print("Close position payload: ", payload)
+        return self.broker_request("delete", self.PLACE_ORDER_URL, data=payload)
+
+    def open_position(self, *args, **kwargs):
+        print("Opening trade...")
+        if kwargs.get("trade_type") == TradeType.OPEN.value:
+            position = self._open_position(*args, **kwargs)
+        else:
+            position = self._close_position(*args, **kwargs)
+        return position.get("dealReference"), TradeStatusList.FILLED.value if position.get("dealReference") else TradeStatusList.FAILED.value
+
+    def _positions(self, *args, **kwargs):
+        """Return orders
+
+        Returns:
+
+        """
+        return self.broker_request("get", self.LIST_POSITIONS_URL)
+
+    def positions(self, *args, **kwargs):
+        positions = self._positions(*args, **kwargs)
+        data = []
+        for position in positions:
+            data.append({
+                "quantity": position.get('position', {}).get("size"),
+                "symbol": position.get('market', {}).get("epic"),
+                "position_type": position.get('position', {}).get("direction"),
+                "dealReference": position.get("dealId"),
+            })
+        return data
+
+    def close_position(self, *args, **kwargs):
+        position = self._close_position(*args, **kwargs)
+        return position.get("dealReference"), TradeStatusList.FILLED.value if position.get("dealReference") else TradeStatusList.FAILED.value
+
+    def get_data(self, *args, **kwargs):
+        pass
+
+    def order_status(self, *args, **kwargs):
+        """Return order status
+
+        """
+
+        return []
+
+    def create_order(self, *args, **kwargs):
+        pass
+
+    def cancel_order(self, *args, **kwargs):
         pass
