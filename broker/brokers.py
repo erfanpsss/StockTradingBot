@@ -601,6 +601,15 @@ class IG(BrokerProcessor):
                 "guaranteedStop": "false",
                 "expiry": "-",
                 "forceOpen": "false",
+                "stopLevel": None,
+                "stopDistance": None,
+                "trailingStop": None,
+                "timeInForce": None,
+                "level": None,
+                "trailingStopIncrement": None,
+                "limitLevel": None,
+                "limitDistance": None,
+                "quoteId": None,
             },
         }
         print("Open position payload: ", payload)
