@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     'riskmanagement',
     'trademanagement',
     'setting',
+    'ml',
     'rangefilter',
     'import_export',
     'stocktrading.apps.SiteAdminConfig',

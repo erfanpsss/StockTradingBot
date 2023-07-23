@@ -75,9 +75,9 @@ class AdminTimeframe(admin.ModelAdmin):
 
 
 class AdminSymbol(admin.ModelAdmin):
-    list_display = ("name",)
-    ordering = ("name",)
-    search_fields = ("name",)
+    list_display = ("name", "pk")
+    ordering = ("name", "pk")
+    search_fields = ("name", "pk")
 
 class AdminSector(admin.ModelAdmin):
     list_display = ("name",)
