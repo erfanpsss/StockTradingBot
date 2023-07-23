@@ -73,17 +73,24 @@ matplotlib.use("TkAgg")  # place this before importing pyplot
 
 
 class Command(BaseCommand):
+    def add_arguments(self, parser):
+        parser.add_argument("--date", type=str)
+
     def handle(self, *args, **options):
+        given_date = datetime.datetime.strptime(
+            options["date"], "%d-%m-%Y"
+        ).date()
+        
         try:
             features = STOCK_ML_FEATURES
             data_raw = IbdData.objects.filter(
-                date__lt=datetime.date(2022, 3, 1),
+                date=given_date,
                 price__isnull=False,
                 company__isnull=False,
             ).order_by("date")
             date = data_raw.first().date
             insider_data_raw = FinvizInsiderData.objects.filter(
-                date__lt=datetime.date(2022, 3, 1)
+                date=given_date
             ).order_by("date")
             insider_trades_subquery = insider_data_raw.filter(
                 symbol=OuterRef("symbol"), date=OuterRef("date")

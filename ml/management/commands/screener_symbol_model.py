@@ -365,60 +365,15 @@ class Command(BaseCommand):
             scaler = MinMaxScaler(feature_range=(0, 1))
             X = pd.DataFrame(scaler.fit_transform(X), columns=X.columns)
 
-            if options["model_type"] == ModelType.LogisticRegression.value:
-                model = pickle.loads(
-                    MlModels.objects.filter(
-                        model_type=options["model_type"], symbol__isnull=True
-                    )
-                    .last()
-                    .model.file.read()
-                )
-            elif (
-                options["model_type"] == ModelType.RandomForestClassifier.value
-            ):
-                model = pickle.loads(
-                    MlModels.objects.filter(
-                        model_type=options["model_type"], symbol__isnull=True
-                    )
-                    .last()
-                    .model.file.read()
-                )
-            elif options["model_type"] == ModelType.NeuralNetwork.value:
-                model = load_model(
-                    default_storage.path(
-                        MlModels.objects.filter(
-                            model_type=options["model_type"],
-                            symbol__isnull=True,
-                        )
-                        .last()
-                        .model.file.name
-                    )
-                )
-            elif options["model_type"] == ModelType.XgBoost.value:
-                model = load(
-                    default_storage.path(
-                        MlModels.objects.filter(
-                            model_type=options["model_type"],
-                            symbol__isnull=True,
-                        )
-                        .last()
-                        .model.file.name
-                    )
-                )
-            elif options["model_type"] == ModelType.DecisionTree.value:
-                model = pickle.loads(
-                    MlModels.objects.filter(
-                        model_type=options["model_type"], symbol__isnull=True
-                    )
-                    .last()
-                    .model.file.read()
-                )
-
             symbols = set(
                 list(data_raw.values_list("symbol__name", flat=True))
             )
             found_symbols = []
             for symbol in symbols:
+                if not MlModels.objects.filter(
+                    symbol__name=symbol, model_type=options["model_type"]
+                ).exists():
+                    continue
                 data_raw_test = (
                     data_raw.filter(
                         price__isnull=False,
@@ -493,6 +448,58 @@ class Command(BaseCommand):
                 test_df["sector"] = test_df_raw_init["sector"]
                 test_df["industry"] = test_df_raw_init["industry"]
                 test_df["country"] = test_df_raw_init["country"]
+                if options["model_type"] == ModelType.LogisticRegression.value:
+                    model = pickle.loads(
+                        MlModels.objects.filter(
+                            model_type=options["model_type"],
+                            symbol__name=symbol,
+                        )
+                        .last()
+                        .model.file.read()
+                    )
+                elif (
+                    options["model_type"]
+                    == ModelType.RandomForestClassifier.value
+                ):
+                    model = pickle.loads(
+                        MlModels.objects.filter(
+                            model_type=options["model_type"],
+                            symbol__name=symbol,
+                        )
+                        .last()
+                        .model.file.read()
+                    )
+                elif options["model_type"] == ModelType.NeuralNetwork.value:
+                    model = load_model(
+                        default_storage.path(
+                            MlModels.objects.filter(
+                                model_type=options["model_type"],
+                                symbol__name=symbol,
+                            )
+                            .last()
+                            .model.file.name
+                        )
+                    )
+                elif options["model_type"] == ModelType.XgBoost.value:
+                    model = load(
+                        default_storage.path(
+                            MlModels.objects.filter(
+                                model_type=options["model_type"],
+                                symbol__name=symbol,
+                            )
+                            .last()
+                            .model.file.name
+                        )
+                    )
+                elif options["model_type"] == ModelType.DecisionTree.value:
+                    model = pickle.loads(
+                        MlModels.objects.filter(
+                            model_type=options["model_type"],
+                            symbol__name=symbol,
+                        )
+                        .last()
+                        .model.file.read()
+                    )
 
                 nx_test = test_df
                 if options["model_type"] == ModelType.LogisticRegression.value:
